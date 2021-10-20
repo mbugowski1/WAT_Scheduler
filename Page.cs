@@ -16,7 +16,12 @@ namespace WAT_Planner
         DateTime startDate;
         String session;
 
-        async public Task Work(String login, String password)
+        public Page(String login, String password)
+        {
+            Work(login, password).Wait();
+        }
+
+        async Task Work(String login, String password)
         {
             session = await GetSession();
             await LogIn(login, password);
@@ -34,7 +39,7 @@ namespace WAT_Planner
                 return text;
             }
             else
-                return "ERROR";
+                throw new HttpRequestException();
         }
         async Task LogIn(String login, String password)
         {
@@ -49,36 +54,30 @@ namespace WAT_Planner
             String group;
             List<String> groups = new List<String>();
             HttpResponseMessage response = await client.GetAsync($"https://s1.wcy.wat.edu.pl/ed1/logged_inc.php?sid={session}&mid=328&iid={year}{semester}");
-            if (response.IsSuccessStatusCode)
+            response.EnsureSuccessStatusCode();
+            String text = await response.Content.ReadAsStringAsync();
+            int tdIndex = text.IndexOf("tdGrayWhite");
+            while (tdIndex > 0)
             {
-                String text = await response.Content.ReadAsStringAsync();
-                int tdIndex = text.IndexOf("tdGrayWhite");
-                while (tdIndex > 0)
+                int checkIndex = text.IndexOf('>', tdIndex) + 1;
+                text = text.Substring(checkIndex);
+                if (text.Substring(0, 5) == "&nbsp")
                 {
-                    int checkIndex = text.IndexOf('>', tdIndex) + 1;
-                    text = text.Substring(checkIndex);
-                    if (text.Substring(0, 5) == "&nbsp")
-                    {
-                        tdIndex = text.IndexOf("tdGrayWhite");
-                        continue;
-                    }
-                    int aIndex = text.IndexOf("<a");
-                    int firstIndex = text.IndexOf('>', aIndex) + 1;
-                    int lastIndex = text.IndexOf('<', firstIndex);
-                    group = text.Substring(firstIndex, lastIndex - firstIndex);
-                    groups.Add(group);
                     tdIndex = text.IndexOf("tdGrayWhite");
-                    Console.WriteLine(group);
+                    continue;
                 }
-                return groups;
+                int aIndex = text.IndexOf("<a");
+                int firstIndex = text.IndexOf('>', aIndex) + 1;
+                int lastIndex = text.IndexOf('<', firstIndex);
+                group = text.Substring(firstIndex, lastIndex - firstIndex);
+                groups.Add(group);
+                tdIndex = text.IndexOf("tdGrayWhite");
+                Console.WriteLine(group);
             }
-            else
-            {
-                return null;
-            }
+            return groups;
 
         }
-        private void LoadTime(string content)
+        void LoadTime(string content)
         {
             int search = "tdFormList1DSheTeaGrpHTM1".Length;
             for (int i = 0; i < 7; i++)
@@ -97,7 +96,7 @@ namespace WAT_Planner
                 endHour[1, i] = Int32.Parse(cut.Substring(3, 2));
             }
         }
-        private void LoadDates(string content, int year)
+        void LoadDates(string content, int year)
         {
             int tdIndex = content.IndexOf("thFormList1HSheTeaGrpHTM3");
             string cut = content.Substring(content.IndexOf("<nobr>", tdIndex) + 6, 8);
@@ -150,6 +149,100 @@ namespace WAT_Planner
             }
             startDate = new DateTime(year, month, day);
         }
+        public async Task<Schedule> LoadSheduleFile(string group, int year, int semester, String strona)
+        {
+            Schedule schedule = new Schedule(group, year, semester);
+
+            //Ładowanie dat i czasów
+            LoadTime(strona);
+            LoadDates(strona, year);
+
+
+            int searchLength = "tdFormList1DSheTeaGrpHTM3".Length;
+            int tdIndex = strona.IndexOf("tdFormList1DSheTeaGrpHTM3");
+            int dayCounter = 0, hourCounter = 0, weekCounter = 0;
+            while (tdIndex > 0)
+            {
+                //Odcięcie niepotrzebnej części strony
+                strona = strona.Substring(tdIndex);
+
+                //Obsłużenie sytuacji, w której komórka jest pusta
+                int checkIndex = strona.IndexOf('>') + 1;
+                if (strona.Substring(checkIndex, 5) == "&nbsp")
+                {
+                    tdIndex = strona.IndexOf("tdFormList1DSheTeaGrpHTM3", searchLength);
+                    weekCounter++;
+                    if (weekCounter == Data.weekCount)
+                    {
+                        hourCounter += 1;
+                        weekCounter = 0;
+                    }
+                    if (hourCounter == 7)
+                    {
+                        dayCounter += 1;
+                        hourCounter = 0;
+                    }
+                    continue;
+                }
+
+                //Tworzenienie wydarzenia i ładowanie danych z nazwy klasy
+                Entry entry = new Entry();
+                int titleStart = strona.IndexOf("title") + 7;
+                int titleEnd = strona.IndexOf('"', titleStart);
+                string title = strona.Substring(titleStart, titleEnd - titleStart);
+                int titleDivide = title.IndexOf('-');
+                int typeStart = title.IndexOf('(');
+                int typeStop = title.IndexOf(')');
+                entry.type = title.Substring(typeStart + 1, typeStop - typeStart - 1);
+                entry.longname = title.Substring(0, titleDivide - 1);
+                entry.leader = title.Substring(titleDivide + 2, typeStart - titleDivide - 3);
+
+                //Ładowanie danych dodatkowych
+                int tdAdditionalIndex = strona.IndexOf("<b style");
+                int start = strona.IndexOf('>', tdAdditionalIndex) + 1;
+                int stop = strona.IndexOf('<', start + 1);
+                entry.shortname = strona.Substring(start, stop - start);
+                tdAdditionalIndex = strona.IndexOf("<b style", stop);
+                start = strona.IndexOf('>', tdAdditionalIndex) + 1;
+                stop = strona.IndexOf('<', start + 1);
+                entry.shortType = strona.Substring(start, stop - start);
+                tdAdditionalIndex = strona.IndexOf(")<br>") + 5;
+                stop = strona.IndexOf('<', tdAdditionalIndex);
+                entry.room = strona.Substring(tdAdditionalIndex, stop - tdAdditionalIndex);
+
+                tdIndex = strona.IndexOf("tdFormList1DSheTeaGrpHTM3", searchLength);
+
+                //Obliczanie czasu wydarzenia
+                DateTime time = startDate.AddDays(weekCounter * 7 + dayCounter);
+                entry.start = new DateTime(time.Year, time.Month, time.Day, startHour[0, hourCounter], startHour[1, hourCounter], 0);
+                entry.timeIndex = hourCounter;
+                entry.stop = new DateTime(time.Year, time.Month, time.Day, endHour[0, hourCounter], endHour[1, hourCounter], 0);
+                weekCounter++;
+                if (weekCounter == Data.weekCount)
+                {
+                    hourCounter += 1;
+                    weekCounter = 0;
+                }
+                if (hourCounter == 7)
+                {
+                    dayCounter += 1;
+                    hourCounter = 0;
+                }
+                ScheduleDay day = schedule.find(time.Date);
+                day.events.Add(entry);
+            }
+            foreach (var day in schedule.days)
+            {
+                await day.Connect();
+            }
+            schedule.days.Sort(delegate (ScheduleDay a, ScheduleDay b)
+            {
+                if (a.date == b.date) return 0;
+                else if (a.date > b.date) return 1;
+                else return -1;
+            });
+            return schedule;
+        }
         public async Task<Schedule> LoadSchedule(string group, int year, int semester)
         {
             Schedule schedule = new Schedule(group, year, semester);
@@ -179,7 +272,7 @@ namespace WAT_Planner
                 {
                     tdIndex = text.IndexOf("tdFormList1DSheTeaGrpHTM3", searchLength);
                     weekCounter++;
-                    if(weekCounter == Service.weekCount)
+                    if(weekCounter == Data.weekCount)
                     {
                         hourCounter += 1;
                         weekCounter = 0;
@@ -225,7 +318,7 @@ namespace WAT_Planner
                 entry.timeIndex = hourCounter;
                 entry.stop = new DateTime(time.Year, time.Month, time.Day, endHour[0, hourCounter], endHour[1, hourCounter], 0);
                 weekCounter++;
-                if (weekCounter == Service.weekCount)
+                if (weekCounter == Data.weekCount)
                 {
                     hourCounter += 1;
                     weekCounter = 0;

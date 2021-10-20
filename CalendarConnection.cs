@@ -72,7 +72,7 @@ namespace WAT_Planner
                 calendars.Add(new CalendarConnection(await Create(nameList[i]), nameList[i]));
             return calendars.ToArray();
         }
-        public IList<Event> GetEvents()
+        IList<Event> GetEvents()
         {
             Events events = service.Events.List(calendarId).Execute();
             return events.Items;

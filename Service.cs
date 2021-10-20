@@ -1,36 +1,49 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Topshelf;
 
 namespace WAT_Planner
 {
-    class Service
+    class Service : ServiceControl
     {
-        public static readonly int weekCount = 22;
-        public static readonly string homeName = "wat_plan";
-        public static readonly string keyName = "key.wat";
-        public static readonly string passwordFile = "password.wat";
-        public static readonly string loginFile = "login.wat";
-        static string password = "";
-        static string login = "";
-
-        public static string strona;
-        //public static string[] groups = { "WCY19IJ4S1", "WCY19IG1S1", "WCY19KC1S1" };
-        public static string[] groups = { "WCY20IB1S4" };
-        Schedule[] schedules;
-        CalendarConnection[] calendars;
-        public void Start()
+        public bool Start(HostControl hostControl)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            Thread t = new Thread(new ThreadStart(Sync));
-            t.Start();
-            //Encoding en = EncodingProvider.GetEncoding("iso-8859-2");
+            new Thread(new ParameterizedThreadStart(Worker)).Start(hostControl);
+            return true;
         }
-        public void Sync()
+
+        public bool Stop(HostControl hostControl)
         {
-            Load().Wait();
+            return true;
+        }
+        (string, string) LoadPassword()
+        {
+            string login = Encoding.UTF8.GetString(Password.Load("login.wat"));
+            string password;
+            using (Password passwordReader = new Password())
+            {
+                password = passwordReader.decrypt(Password.Load("password.wat"));
+            }
+            return (login, password);
+        }
+        async void Worker(object hostControl)
+        {
+            string[] groups = { "WCY20IB1S4" };
+            CalendarConnection[] calendars;
+            Schedule[] schedules;
+            Task<CalendarConnection[]> calendar = Calendar();
+
+
+            Task<Schedule>[] wat = new Task<Schedule>[groups.Length];
+            for (int i = 0; i < groups.Length; i++)
+                wat[i] = LoadWat();
+            schedules = await Task.WhenAll(wat);
+            calendars = await calendar;
+
+
             foreach (Schedule schedule in schedules)
             {
                 for (int i = 0; i < calendars.Length; i++)
@@ -42,65 +55,20 @@ namespace WAT_Planner
                     }
                 }
             }
-            Console.WriteLine("Done");
-            Console.Read();
+            ((HostControl)hostControl).Stop();
         }
-        async Task Load()
+        async Task<Schedule> LoadWat()
         {
-            Password pass = new Password();
-            login = Encoding.UTF8.GetString(Password.Load(loginFile));
-            password = pass.decrypt(Password.Load(passwordFile));
-            strona = Encoding.GetEncoding("iso-8859-2").GetString(Password.LoadA("C:/Users/Michal/Desktop/edziekanat.html"));
-            List<Schedule> scheduleList = new List<Schedule>();
-            Task wat = Task.Run(async () =>
-            {
-                Page page = new Page();
-                await page.Work(login, password);
-                List<Task<Schedule>> scheduleTask = new List<Task<Schedule>>();
-                foreach(string group in groups)
-                    scheduleTask.Add(page.LoadSchedule(group, 2021, 1));
-                while(scheduleTask.Count > 0)
-                {
-                    Task<Schedule> finished = await Task.WhenAny<Schedule>(scheduleTask.ToArray());
-                    scheduleList.Add(finished.Result);
-                    scheduleTask.Remove(finished);
-                }
-
-            });
-            Task google = Task.Run(async () =>
-            {
-                await CalendarConnection.Connect();
-                calendars = await CalendarConnection.GetCalendars(groups);
-            });
-            await Task.WhenAll(wat, google);
-            schedules = scheduleList.ToArray();
+            (string, string) credentials = LoadPassword();
+            Page page = new Page(credentials.Item1, credentials.Item2);
+            credentials.Item1 = null;
+            credentials.Item2 = null;
+            return await page.LoadSchedule("WCY20IB1S4", 2021, 1);
         }
-        static void LoadPassword()
+        async Task<CalendarConnection[]> Calendar()
         {
-            using (Password test = new Password())
-            {
-                byte[] loginByte = Password.Load(loginFile);
-                if (loginByte == null)
-                {
-                    Console.WriteLine("Proszę wprowadzić login do konta e-dziekanat WCY WAT: ");
-                    login = Console.ReadLine();
-                    if (login == "") return;
-                    Password.Write(Encoding.ASCII.GetBytes(login), loginFile);
-                }
-                else
-                    login = Encoding.ASCII.GetString(loginByte);
-                byte[] passwordEncrypted = Password.Load(passwordFile);
-                if (passwordEncrypted == null)
-                {
-                    Console.WriteLine("Proszę wprowadzić hasło do konta e-dziekanat WCY WAT: ");
-                    password = Console.ReadLine();
-                    if (password == "") return;
-                    byte[] encrypted = test.encrypt(password);
-                    Password.Write(encrypted, passwordFile);
-                }
-                else
-                    password = test.decrypt(passwordEncrypted);
-            }
+            await CalendarConnection.Connect();
+            return await CalendarConnection.GetCalendars(new string[] { "WCY20IB1S4" });
         }
     }
 }

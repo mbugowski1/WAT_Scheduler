@@ -9,20 +9,18 @@ namespace WAT_Planner
 {
     class Program
     {
-        static void Main()
+        public static void Main(String[] args)
         {
-            var service = HostFactory.Run(x =>
+            HostFactory.New(serviceConf =>
             {
-                x.Service<Service>(s =>
+                serviceConf.Service<Service>(service =>
                 {
-                    s.ConstructUsing(ser => new Service());
-                    s.WhenStarted(ser => ser.Start());
-                    s.WhenStopped(ser => { });
+                    service.ConstructUsing(() => new Service());
+                    service.WhenStarted((body, control) => body.Start(control));
+                    service.WhenStopped((body, control) => body.Stop(control));
                 });
-                x.RunAsLocalSystem();
-            });
-            int exitCodeValue = (int)Convert.ChangeType(service, service.GetTypeCode());
-            Environment.ExitCode = exitCodeValue;
+                serviceConf.RunAsLocalSystem();
+            }).Run();
         }
     }
 }

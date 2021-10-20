@@ -8,14 +8,14 @@ namespace WAT_Planner
 {
     class Password : IDisposable
     {
-        static readonly string home = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + '/' + Service.homeName + '/';
+        static readonly string home = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + '/' + Data.homeName + '/';
         static SecureString password = new SecureString();
         static SecureString login = new SecureString();
         readonly Aes cypher = AesCryptoServiceProvider.Create();
         public Password()
         {
-            string keyPath = home + Service.keyName;
-            string passPath = home + Service.passwordFile; 
+            string keyPath = home + Data.keyName;
+            string passPath = home + Data.passwordName; 
             if (!Directory.Exists(home))
                 Directory.CreateDirectory(home);
             if(!File.Exists(keyPath))
@@ -52,11 +52,10 @@ namespace WAT_Planner
         public static byte[] Load(string fileName)
         {
             string file = home + fileName;
-            //string file = fileName;
             if (!File.Exists(file)) return null;
             return File.ReadAllBytes(file);
         }
-        public static byte[] LoadA(string fileName)
+        public static byte[] LoadFile(string fileName)
         {
             string file = fileName;
             if (!File.Exists(file)) return null;
