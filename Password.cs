@@ -8,24 +8,21 @@ namespace WAT_Planner
 {
     class Password : IDisposable
     {
-        static readonly string home = Environment.GetFolderPath(Environment.SpecialFolder.Personal) + '/' + Data.homeName + '/';
         static SecureString password = new SecureString();
         static SecureString login = new SecureString();
         readonly Aes cypher = AesCryptoServiceProvider.Create();
         public Password()
         {
-            string keyPath = home + Data.keyName;
-            string passPath = home + Data.passwordName; 
-            if (!Directory.Exists(home))
-                Directory.CreateDirectory(home);
-            if(!File.Exists(keyPath))
+            if (!Directory.Exists(Data.HomePath))
+                Directory.CreateDirectory(Data.HomePath);
+            if(!File.Exists(Data.KeyPath))
             {
-                if (File.Exists(passPath))
-                    File.Delete(passPath);
-                File.Create(keyPath).Close();
+                if (File.Exists(Data.PasswordPath))
+                    File.Delete(Data.PasswordPath);
+                File.Create(Data.PasswordPath).Close();
             }
 
-            byte[] stream = File.ReadAllBytes(keyPath);
+            byte[] stream = File.ReadAllBytes(Data.KeyPath);
             if(stream.Length == 48)
             {
                 byte[] key = new byte[32];
@@ -46,24 +43,16 @@ namespace WAT_Planner
                     stream[i] = cypher.Key[i];
                 for (int i = 0; i < 16; i++)
                     stream[i + 32] = cypher.IV[i];
-                File.WriteAllBytes(keyPath, stream);
+                File.WriteAllBytes(Data.KeyPath, stream);
             }
         }
-        public static byte[] Load(string fileName)
+        public static byte[] Load(string file)
         {
-            string file = home + fileName;
             if (!File.Exists(file)) return null;
             return File.ReadAllBytes(file);
         }
-        public static byte[] LoadFile(string fileName)
+        public static void Write(byte[] stream, string file)
         {
-            string file = fileName;
-            if (!File.Exists(file)) return null;
-            return File.ReadAllBytes(file);
-        }
-        public static void Write(byte[] stream, string fileName)
-        {
-            string file = home + fileName;
             if (!File.Exists(file))
                 File.Create(file).Close();
             File.WriteAllBytes(file, stream);
