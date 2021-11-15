@@ -44,6 +44,7 @@ namespace WAT_Planner
                             string[] values = seperated[1].Split(',');
                             for(int i = 0; i < values.Length; i++)
                                 values[i] = String.Concat(values[i].Where(c => !Char.IsWhiteSpace(c)));
+                            if (settings.Select(x => x.key).Contains(seperated[0])) return;
                             Setting add = new Setting()
                             {
                                 key = seperated[0],
@@ -78,6 +79,17 @@ namespace WAT_Planner
                 if (!exists) write.Add(new Setting() { key = defaultKey.key });
             }
             Write(filePath, write);
+        }
+        public string[] Get(string key)
+        {
+            return settings.Where(x => x.key == key).Select(x => x.values).FirstOrDefault();
+        }
+        public string GetFirst(string key)
+        {
+            var result = settings.Where(x => x.key == key).Select(x => x.values).FirstOrDefault();
+            if (result == null)
+                return null;
+            return result.FirstOrDefault();
         }
         public override string ToString()
         {

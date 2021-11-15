@@ -12,7 +12,7 @@ namespace WAT_Planner
         {
             //new Thread(new ParameterizedThreadStart(Worker)).Start(hostControl);
             Config test = new Config(Data.ConfigPath);
-            Debug.WriteLine(test.ToString());
+            Debug.WriteLine("TO: " + test.GetFirst("Login"));
             return true;
         }
 
