@@ -14,9 +14,9 @@ namespace WAT_Planner
         public int[,] startHour = new int[2, 7];
         public int[,] endHour = new int[2, 7];
         DateTime startDate;
-        String session;
+        string session;
 
-        public Page(String login, String password)
+        public Page(string login, string password)
         {
             Work(login, password).Wait();
         }

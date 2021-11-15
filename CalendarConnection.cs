@@ -79,8 +79,7 @@ namespace WAT_Planner
         }
         public void Update(Schedule schedule)
         {
-            IList<Event> castEvents = GetEvents();
-            List<Event> events = new List<Event>(castEvents);
+            List<Event> events = new List<Event>(GetEvents());
             events.Sort(delegate (Event a, Event b)
             {
                 if (a.Start.DateTime == b.Start.DateTime) return 0;

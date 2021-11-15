@@ -13,8 +13,9 @@ namespace WAT_Planner
         string[] groups = { "WCY19IJ4S1" };
         public bool Start(HostControl hostControl)
         {
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            new Thread(new ParameterizedThreadStart(Worker)).Start(hostControl);
+            //new Thread(new ParameterizedThreadStart(Worker)).Start(hostControl);
+            Config test = new Config(Data.ConfigPath);
+            Debug.WriteLine(test.GetFirst("Login"));
             return true;
         }
 
@@ -34,7 +35,6 @@ namespace WAT_Planner
         }
         public async void Worker(object hostControl) 
         {
-            //string[] groups = { "WCY19IG1S1", "WCY19IJ4S1", "WCY19KC1S1" };
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             Task<CalendarConnection[]> calendarsTask = Calendar();
             Schedule[] schedules;
