@@ -22,8 +22,11 @@ namespace WAT_Planner
             new Setting { key = "ManualDelete", values = new string[] { String.Empty } }
         };
         List<Setting> settings = new List<Setting>();
+        //Dictionary<string, string[]> dictionary = new Dictionary<string, string[]>();
         public Config(in string file)
         {
+            dictionary.TryGetValue("Login", out string[] result);
+
             if (!File.Exists(file))
             {
                 File.Create(file).Close();
@@ -32,7 +35,7 @@ namespace WAT_Planner
             }
             else
             {
-                using (StreamReader reader = new StreamReader(file, Encoding.ASCII))
+                using (StreamReader reader = new StreamReader(file, Encoding.UTF8))
                 {
                     string line;
                     while ((line = reader.ReadLine()) != null)
