@@ -22,7 +22,7 @@ namespace WAT_Planner
             calendarId = service.Calendars.Get(id).Execute().Id;
             this.group = group;
         }
-        public static async Task Connect()
+        public async static Task Connect()
         {
             UserCredential credential;
             string[] scopes = { CalendarService.Scope.Calendar };

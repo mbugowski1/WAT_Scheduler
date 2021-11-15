@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,12 +30,11 @@ namespace WAT_Planner
             }
             return (login, password);
         }
-        async void Worker(object hostControl)
+        public void Worker(object hostControl) 
         {
-            string[] groups = { "WCY20IB1S4" };
-            CalendarConnection[] calendars;
-            Schedule[] schedules;
-            Task<CalendarConnection[]> calendar = Calendar();
+            string[] groups = { "WCY19IG1S1", "WCY19IJ4S1", "WCY19KC1S1" };
+            CalendarConnection[] calendars = { };
+            Schedule[] schedules = { };
 
             (string, string) credentials;
             try
@@ -51,11 +51,27 @@ namespace WAT_Planner
             credentials.Item1 = null;
             credentials.Item2 = null;
 
-            schedules = await LoadWat(page, groups);
-            calendars = await calendar;
-
-
-            foreach (Schedule schedule in schedules)
+            /*Parallel.Invoke(async () =>
+            {
+                calendars = await Calendar();
+            },
+            async () =>
+            {
+                schedules = await LoadWat(page, groups);
+                Debug.WriteLine("\n\n\nTUTAAJJJJJJJJJJJJJJJJJJ\n\n\n " + schedules.Length);
+                Debug.Flush();
+            });*/
+            Parallel.Invoke(async () =>
+            {
+                schedules = await LoadWat(page, groups);
+            });
+            //schedules = await LoadWat(page, groups);
+            foreach (Schedule schedule1 in schedules)
+            {
+                Console.WriteLine(schedule1.name);
+            }
+            Console.WriteLine(schedules.Length);
+            /*foreach (Schedule schedule in schedules)
             {
                 for (int i = 0; i < calendars.Length; i++)
                 {
@@ -65,7 +81,7 @@ namespace WAT_Planner
                         break;
                     }
                 }
-            }
+            }*/
             ((HostControl)hostControl).Stop();
         }
 
