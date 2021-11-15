@@ -26,5 +26,11 @@ namespace WAT_Planner
                 }
             });
         }
+        public override string ToString()
+        {
+            string result = String.Empty;
+            events.ForEach(x => result += x.longname + " | " + x.type + " | " + x.start.ToString() + "\n");
+            return result;
+        }
     }
 }

@@ -30,11 +30,13 @@ namespace WAT_Planner
             }
             return (login, password);
         }
-        public void Worker(object hostControl) 
+        public async void Worker(object hostControl) 
         {
-            string[] groups = { "WCY19IG1S1", "WCY19IJ4S1", "WCY19KC1S1" };
-            CalendarConnection[] calendars = { };
-            Schedule[] schedules = { };
+            //string[] groups = { "WCY19IG1S1", "WCY19IJ4S1", "WCY19KC1S1" };
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            string[] groups = { "WCY19IJ4S1" };
+            //Task<CalendarConnection[]> calendarsTask = Calendar();
+            Schedule[] schedules;
 
             (string, string) credentials;
             try
@@ -50,27 +52,11 @@ namespace WAT_Planner
             Page page = new Page(credentials.Item1, credentials.Item2);
             credentials.Item1 = null;
             credentials.Item2 = null;
-
-            /*Parallel.Invoke(async () =>
-            {
-                calendars = await Calendar();
-            },
-            async () =>
-            {
-                schedules = await LoadWat(page, groups);
-                Debug.WriteLine("\n\n\nTUTAAJJJJJJJJJJJJJJJJJJ\n\n\n " + schedules.Length);
-                Debug.Flush();
-            });*/
-            Parallel.Invoke(async () =>
-            {
-                schedules = await LoadWat(page, groups);
-            });
-            //schedules = await LoadWat(page, groups);
-            foreach (Schedule schedule1 in schedules)
-            {
-                Console.WriteLine(schedule1.name);
-            }
+            schedules = new Schedule[] { await page.LoadSchedule(groups[0], 2021, 1, Encoding.GetEncoding("ISO-8859-2").GetString(Password.LoadFile("C:/Users/Michal/Desktop/J4.html"))) };
+            //CalendarConnection[] calendars = await calendarsTask;
             Console.WriteLine(schedules.Length);
+            foreach (Schedule schedule in schedules)
+                Console.WriteLine(schedule.ToString(15, 11));
             /*foreach (Schedule schedule in schedules)
             {
                 for (int i = 0; i < calendars.Length; i++)
