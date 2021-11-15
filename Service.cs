@@ -1,13 +1,16 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Topshelf;
+using System.Linq;
 
 namespace WAT_Planner
 {
     class Service : ServiceControl
     {
+        string[] groups = { "WCY19IJ4S1" };
         public bool Start(HostControl hostControl)
         {
             //new Thread(new ParameterizedThreadStart(Worker)).Start(hostControl);
@@ -30,13 +33,11 @@ namespace WAT_Planner
             }
             return (login, password);
         }
-        async void Worker(object hostControl)
+        public async void Worker(object hostControl) 
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            string[] groups = { "WCY20IB1S4" };
-            CalendarConnection[] calendars;
+            Task<CalendarConnection[]> calendarsTask = Calendar();
             Schedule[] schedules;
-            Task<CalendarConnection[]> calendar = Calendar();
 
             (string, string) credentials;
             try
@@ -52,11 +53,8 @@ namespace WAT_Planner
             Page page = new Page(credentials.Item1, credentials.Item2);
             credentials.Item1 = null;
             credentials.Item2 = null;
-
-            schedules = await LoadWat(page, groups);
-            calendars = await calendar;
-
-
+            schedules = new Schedule[] { await page.LoadSchedule(groups[0], 2021, 1, Encoding.GetEncoding("ISO-8859-2").GetString(Password.LoadFile("C:/Users/Michal/Desktop/J4.html"))) };
+            CalendarConnection[] calendars = await calendarsTask;
             foreach (Schedule schedule in schedules)
             {
                 for (int i = 0; i < calendars.Length; i++)
@@ -84,7 +82,7 @@ namespace WAT_Planner
         async Task<CalendarConnection[]> Calendar()
         {
             await CalendarConnection.Connect();
-            return await CalendarConnection.GetCalendars(new string[] { "WCY20IB1S4" });
+            return await CalendarConnection.GetCalendars(groups);
         }
     }
 }

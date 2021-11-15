@@ -17,7 +17,7 @@ namespace WAT_Planner
             {
                 for(int i = 1; i < events.Count; i++)
                 {
-                    if((events[i-1].shortname == events[i].shortname) && (events[i-1].timeIndex + 1 == events[i].timeIndex))
+                    if((events[i-1].shortname == events[i].shortname) && (events[i-1].timeIndex + 1 == events[i].timeIndex) && (events[i-1].type == events[i].type) && (events[i-1].leader == events[i].leader))
                     {
                         events[i - 1].stop = events[i].stop;
                         events[i - 1].timeIndex = events[i].timeIndex;
@@ -25,6 +25,12 @@ namespace WAT_Planner
                     }
                 }
             });
+        }
+        public override string ToString()
+        {
+            string result = String.Empty;
+            events.ForEach(x => result += x.longname + " | " + x.type + " | " + x.start.ToString() + "\n");
+            return result;
         }
     }
 }

@@ -149,7 +149,7 @@ namespace WAT_Planner
             }
             startDate = new DateTime(year, month, day);
         }
-        public async Task<Schedule> LoadSheduleFile(string group, int year, int semester, String strona)
+        public async Task<Schedule> LoadSchedule(string group, int year, int semester, String strona)
         {
             Schedule schedule = new Schedule(group, year, semester);
 

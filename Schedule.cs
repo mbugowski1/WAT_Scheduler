@@ -38,5 +38,11 @@ namespace WAT_Planner
             }
             return list;
         }
+        public string ToString(int day, int month, int year)
+        {
+            string result = String.Empty;
+            days.Where(x => x.date.Day == day && x.date.Month == month && x.date.Year == year).ToList().ForEach(x => result += x.ToString() + "\n\n");
+            return result;
+        }
     }
 }
