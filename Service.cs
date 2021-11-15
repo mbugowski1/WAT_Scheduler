@@ -56,7 +56,7 @@ namespace WAT_Planner
             //CalendarConnection[] calendars = await calendarsTask;
             Console.WriteLine(schedules.Length);
             foreach (Schedule schedule in schedules)
-                Console.WriteLine(schedule.ToString(15, 11));
+                Console.WriteLine(schedule.ToString(15, 11, 2021));
             /*foreach (Schedule schedule in schedules)
             {
                 for (int i = 0; i < calendars.Length; i++)
