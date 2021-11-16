@@ -15,7 +15,7 @@ namespace WAT_Planner
         {
             //new Thread(new ParameterizedThreadStart(Worker)).Start(hostControl);
             Config test = new Config(Data.ConfigPath);
-            Debug.WriteLine(test.GetFirst("Login"));
+            Debug.WriteLine(test.ToString());
             return true;
         }
 
@@ -53,7 +53,7 @@ namespace WAT_Planner
             Page page = new Page(credentials.Item1, credentials.Item2);
             credentials.Item1 = null;
             credentials.Item2 = null;
-            schedules = new Schedule[] { await page.LoadSchedule(groups[0], 2021, 1, Encoding.GetEncoding("ISO-8859-2").GetString(Password.LoadFile("C:/Users/Michal/Desktop/J4.html"))) };
+            schedules = new Schedule[] { await page.LoadSchedule(groups[0], 2021, 1, Encoding.GetEncoding("ISO-8859-2").GetString(Password.Load("C:/Users/Michal/Desktop/J4.html"))) };
             CalendarConnection[] calendars = await calendarsTask;
             foreach (Schedule schedule in schedules)
             {

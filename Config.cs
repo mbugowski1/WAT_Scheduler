@@ -32,7 +32,7 @@ namespace WAT_Planner
                 if (lines[lines.Count - 1].Length != 0) File.AppendAllText(file, Environment.NewLine);
                 lines.ForEach(line =>
                 {
-                    line = line.Split(" #", 2)[0];
+                    line = line.Split("#", 2)[0];
                     if (line.Contains('='))
                     {
                         string[] seperated = line.Split('=', 2);
