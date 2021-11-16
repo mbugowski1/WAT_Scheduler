@@ -165,7 +165,9 @@ namespace WAT_Planner
         {
             List<string> write = new List<string>();
             foreach (string key in defaultSettings)
-                if (!settings.ContainsKey(key)) write.Add(key);
+                if (!settings.ContainsKey(key))
+                    if(!manual.ContainsKey(key))
+                        write.Add(key);
             Write(filePath, write);
         }
         public string[] GetString(string key)
