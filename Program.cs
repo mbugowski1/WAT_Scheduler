@@ -4,28 +4,43 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Topshelf;
 
 namespace WAT_Planner
 {
-    class Program
+    static class Program
     {
-        public static void Main(String[] args)
+        static Config config = new Config(Data.ConfigPath);
+        public static void Run()
         {
-            HostFactory.New(serviceConf =>
+            string login, password;
+            string[] groups;
+            Entry[] entriesToAdd;
+            if (!LoadCredentials(out login, out password)) return;
+            config.GetString("Groups", out groups);
+            config.GetEntry("ManualAdd", entriesToAdd, )
+
+        }
+        static bool LoadCredentials(out string login, out string password)
+        {
+            bool done;
+            if (done = config.GetFirstString("Login", out login))
             {
-                serviceConf.Service<Service>(service =>
-                {
-                    service.ConstructUsing(() => new Service());
-                    service.WhenStarted((body, control) => body.Start(control));
-                    service.WhenStopped((body, control) => body.Stop(control));
-                });
-                serviceConf.RunAsLocalSystem();
-                serviceConf.StartAutomaticallyDelayed();
-                serviceConf.SetDescription("Service synchronizing edziekanat WAT with Google Calendar");
-                serviceConf.SetDisplayName("WAT Planner");
-                serviceConf.SetServiceName("Wat_Planner");
-            }).Run();
+                //Obsługa wyjątku z brakiem hasła
+                byte[] encryptedPassword = Password.Load(Data.PasswordPath);
+                using Password pass = new();
+                password = pass.decrypt(encryptedPassword);
+            }
+            else
+            {
+                password = null;
+                Log("Warning", "No Login");
+            }
+            return done;
+
+        }
+        static void Log(string type, string text)
+        {
+            File.AppendText($"{DateTime.Now.ToString()} {type}: {text}");
         }
     }
 }

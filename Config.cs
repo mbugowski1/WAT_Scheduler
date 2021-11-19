@@ -8,6 +8,12 @@ namespace WAT_Planner
 {
     class Config
     {
+        public struct EntryToAdd
+        {
+            public Entry entry;
+            public string schedule;
+        }
+
         private class Setting
         {
             public bool IsDictionary { private set; get; }
@@ -162,18 +168,17 @@ namespace WAT_Planner
             }
             return true;
         }
-        public bool GetEntry(string setting, out Entry[] result, out string schedule)
+        public bool GetEntry(string setting, out List<EntryToAdd> entryToAdd)
         {
-            schedule = null;
             if (!settings.TryGetValue(setting, out Setting[] sets))
             {
-                result = null;
+                entryToAdd = null;
                 return false;
             }
             foreach (Setting set in sets)
                 if (set.IsDictionary == false)
                     throw new ArgumentException("Tried to read from non brackets setting");
-            result = new Entry[sets.Length];
+            entryToAdd.entry = new Entry[sets.Length];
             for (int i = 0; i < sets.Length; i++)
             {
                 Dictionary<string, string> pairs = (Dictionary<string, string>)sets[i].Value;
