@@ -3,22 +3,35 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace WAT_Planner
 {
     class Config
     {
+        private class Setting
+        {
+            public bool IsDictionary { private set; get; }
+            public object Value { private set; get; }
+            public Setting(object value, bool brackets)
+            {
+                Value = value;
+                IsDictionary = brackets;
+            }
+            public void SetValue(object value, bool brackets)
+            {
+                Value = value;
+                IsDictionary = brackets;
+            }
+        }
         static readonly string[] defaultSettings = new string[]
-        { 
+        {
             "Login",
             "Groups",
             "SubjectFromGroup",
             "ManualAdd",
             "ManualDelete"
         };
-        Dictionary<string, string[]> settings = new Dictionary<string, string[]>();
-        Dictionary<string, Entry[]> manual = new Dictionary<string, Entry[]>();
+        Dictionary<string, Setting[]> settings = new Dictionary<string, Setting[]>();
         public Config(in string file)
         {
             if (!File.Exists(file))
@@ -27,58 +40,80 @@ namespace WAT_Planner
             }
             else
             {
+                //Remove white symbols and split brackets
                 string config = Encoding.UTF8.GetString(File.ReadAllBytes(file));
-                config = removeNextLineFromBrackets(config, new char[] { ' ', '\t', '\r' });
-                List<string> lines = config.Split('\n').ToList();
-                if (lines[lines.Count - 1].Length != 0) File.AppendAllText(file, Environment.NewLine);
-                lines.ForEach(line =>
-                {
-                    line = line.Split("#", 2)[0];
-                    if (line.Contains('='))
-                    {
-                        string[] seperated = line.Split('=', 2);
-                        if (seperated[1].Contains('{') && seperated[1].Contains('}'))
-                        {
-                            if (seperated[0] != "ManualDelete" && seperated[0] != "ManualAdd") return;
-                            int stop = 0;
-                            List<Entry> values = new List<Entry>();
-                            while(seperated[1].IndexOf('{', stop) != -1)
-                            {
-                                int start = seperated[1].IndexOf('{', stop) + 1;
-                                stop = seperated[1].IndexOf('}', start);
-                                values.Add(GetEntry(seperated[1].Substring(start, stop - start)));
-                            }
-                            if (settings.ContainsKey(seperated[0])) return;
-                            manual.Add(seperated[0], values.ToArray());
-                        }
-                        else
-                        {
-                            string[] values = seperated[1].Split(',');
-                            //for (int i = 0; i < values.Length; i++)
-                            //    values[i] = String.Concat(values[i].Where(c => !Char.IsWhiteSpace(c)));
-                            if (settings.ContainsKey(seperated[0])) return;
-                            settings.Add(seperated[0], values);
-                        }
-                    }
-                });
+                config = PullBrackets(RemoveChars(config, new char[] { '\t', '\r' }));
+                //Seperate lines
+                string[] lines = config.Split('\n');
+                //Add newline at the end
+                if (lines[lines.Length - 1].Length != 0)
+                    File.AppendAllText(file, Environment.NewLine);
+
+                LoadSettings(lines);
             }
             SettingsCheck(file);
         }
-        string removeNextLineFromBrackets(in string text, char[] excluded)
+        void LoadSettings(string[] lines)
+        {
+            foreach (string edit in lines)
+            {
+                string line = edit.Split("#", 2)[0];
+                if (line.Contains('='))
+                {
+                    string[] seperated = line.Split('=', 2);
+                    if (settings.ContainsKey(seperated[0])) return;
+                    Setting[] sets;
+                    if (seperated[1].Contains('{') && seperated[1].Contains('}'))
+                    {
+                        int stop = 0;
+                        List<Dictionary<string, string>> pairs = new List<Dictionary<string, string>>();
+                        while (seperated[1].IndexOf('{', stop) != -1)
+                        {
+                            int start = seperated[1].IndexOf('{', stop) + 1;
+                            stop = seperated[1].IndexOf('}', start);
+                            string textToEdit = seperated[1].Substring(start, stop - start);
+                            pairs.Add(GetDictionary(textToEdit));
+                        }
+                        sets = new Setting[pairs.Count];
+                        for (int i = 0; i < sets.Length; i++)
+                            sets[i] = new Setting(pairs[i], true);
+                    }
+                    else
+                    {
+                        string[] values = seperated[1].Split(',');
+                        sets = new Setting[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                            sets[i] = new Setting(values[i], false);
+                    }
+                    settings.Add(seperated[0], sets);
+                }
+            }
+        }
+        string PullBrackets(in string text)
         {
             int startIndex = 0;
             StringBuilder modifier = new StringBuilder(text);
-            for(int i = 0; i < modifier.Length; i++)
+            bool inside = false;
+            for (int i = 0; i < modifier.Length; i++)
             {
                 if (modifier[i] == '{')
                 {
                     startIndex = i;
+                    inside = true;
                 }
                 else if (modifier[i] == '}')
                 {
                     modifier.Replace("\n", "", startIndex, i - startIndex);
                 }
+                if (!inside)
+                    if (modifier[i] == ' ')
+                        modifier.Remove(i--, 1);
             }
+            return modifier.ToString();
+        }
+        string RemoveChars(in string text, char[] excluded)
+        {
+            StringBuilder modifier = new StringBuilder(text);
             for (int i = 0; i < modifier.Length; i++)
             {
                 if(excluded.Contains(modifier[i]))
@@ -99,61 +134,93 @@ namespace WAT_Planner
             DateTime result = new DateTime(date.Year, date.Month, date.Day, Int32.Parse(timeStrings[0]), Int32.Parse(timeStrings[1]), 0);
             return result;
         }
-        Entry GetEntry(string text)
+        Dictionary<string, string> GetDictionary(string text)
         {
-            string shortName = String.Empty, longName = String.Empty, leader = String.Empty, type = String.Empty, startTime = null, stopTime = null;
-            DateTime start = DateTime.Now, stop = DateTime.Now;
-            DateTime? date = null;
             string[] options = text.Split(',');
-            foreach(string option in options)
+            Dictionary<string, string> result = new Dictionary<string, string>();
+            foreach (string option in options)
             {
                 if (!option.Contains('=')) continue;
                 string[] values = option.Split('=', 2);
-                string key = values[0];
-                string value = values[1];
-                switch (key)
-                {
-                    case "short_name":
-                        shortName = value;
-                        break;
-                    case "long_name":
-                        longName = value;
-                        break;
-                    case "leader":
-                        leader = value;
-                        break;
-                    case "type":
-                        type = value;
-                        break;
-                    case "date":
-                        date = GetDate(value);
-                        break;
-                    case "start_time":
-                        startTime = value;
-                        break;
-                    case "stop_time":
-                        stopTime = value;
-                        break;
-                }
+                result.Add(values[0], values[1]);
             }
-            if(date != null)
-            {
-                if (startTime != null)
-                    start = GetTime((DateTime)date, startTime);
-                if (stopTime != null)
-                    stop = GetTime((DateTime)date, stopTime);
-            }
-            Entry result = new Entry
-            {
-                shortname = shortName,
-                longname = longName,
-                leader = leader,
-                type = type,
-                start = start,
-                stop = stop,
-                shortType = type.Substring(0, 1)
-            };
             return result;
+        }
+        public bool GetDictionary(string setting, out Dictionary<string, string>[] result)
+        {
+            if (!settings.TryGetValue(setting, out Setting[] sets))
+            {
+                result = null;
+                return false;
+            }
+            result = new Dictionary<string, string>[sets.Length];
+            for (int i = 0; i < sets.Length; i++)
+            {
+                if (sets[i].IsDictionary == false)
+                    throw new ArgumentException("Tried to read from non brackets setting");
+                result[i] = (Dictionary<string, string>)sets[i].Value;
+            }
+            return true;
+        }
+        public bool GetEntry(string setting, out Entry[] result, out string schedule)
+        {
+            schedule = null;
+            if (!settings.TryGetValue(setting, out Setting[] sets))
+            {
+                result = null;
+                return false;
+            }
+            foreach (Setting set in sets)
+                if (set.IsDictionary == false)
+                    throw new ArgumentException("Tried to read from non brackets setting");
+            result = new Entry[sets.Length];
+            for (int i = 0; i < sets.Length; i++)
+            {
+                Dictionary<string, string> pairs = (Dictionary<string, string>)sets[i].Value;
+                schedule = null;
+                string dateText = String.Empty, startTime = String.Empty, stopTime = String.Empty;
+                result[i] = new Entry();
+                bool done;
+                if (done = pairs.TryGetValue("short_name", out result[i].shortname))
+                    if (done = pairs.TryGetValue("long_name", out result[i].longname))
+                        if (done = pairs.TryGetValue("leader", out result[i].leader))
+                            if (done = pairs.TryGetValue("type", out result[i].type))
+                                if (done = pairs.TryGetValue("date", out dateText))
+                                    if (done = pairs.TryGetValue("start_time", out startTime))
+                                        if (done = pairs.TryGetValue("stop_time", out stopTime))
+                                            done = pairs.TryGetValue("schedule", out schedule);
+                if (done)
+                {
+                    DateTime date = GetDate(dateText);
+                    result[i].start = GetTime(date, startTime);
+                    result[i].stop = GetTime(date, stopTime);
+                    result[i].shortType = result[i].type.Substring(0, 1);
+                }
+                else
+                    throw new ArgumentException("Error in config file or its not and Entry");
+            }
+            return true;
+        }
+        public bool GetString(string setting, out string[] result)
+        {
+            if (!settings.TryGetValue(setting, out Setting[] sets))
+            {
+                result = null;
+                return false;
+            }
+            foreach (Setting set in sets)
+                if (set.IsDictionary == true)
+                    throw new ArgumentException("Tried to read from brackets setting");
+            result = new string[sets.Length];
+            for (int i = 0; i < sets.Length; i++)
+                result[i] = (string)sets[i].Value;
+            return true;
+        }
+        public bool GetFirstString(string setting, out string result)
+        {
+            bool notFaulty = GetString(setting, out string[] array);
+            result = array[0];
+            return notFaulty;
         }
         void Write(in string filePath, List<string> settings)
         {
@@ -166,49 +233,34 @@ namespace WAT_Planner
             List<string> write = new List<string>();
             foreach (string key in defaultSettings)
                 if (!settings.ContainsKey(key))
-                    if(!manual.ContainsKey(key))
-                        write.Add(key);
+                    write.Add(key);
             Write(filePath, write);
-        }
-        public string[] GetString(string key)
-        {
-            if (settings.TryGetValue(key, out string[] result))
-                return result;
-            else return null;
-        }
-        public string GetStringFirst(string key)
-        {
-            string[] result = GetString(key);
-            if (result != null)
-                return result[0];
-            else return null;
         }
         public override string ToString()
         {
             string result = String.Empty;
-            foreach (string key in settings.Keys)
+            foreach (KeyValuePair<string, Setting[]> setting in settings)
             {
-                result += key + " = ";
+                result += setting.Key + " = ";
                 bool first = true;
-                foreach (string value in settings[key])
+                foreach (Setting settingValue in setting.Value)
                 {
-                    if (first)
-                    {
+                    if (!first)
+                        result += ", ";
+                    else
                         first = false;
-                        result += value;
+                    if (settingValue.IsDictionary)
+                    {
+                        var values = (Dictionary<string, string>)settingValue.Value;
+                        result += "{\n";
+                            foreach (KeyValuePair<string, string> pair in values)
+                                result += $"\t{pair.Key}={pair.Value}{Environment.NewLine}";
+                        result += "}";
                     }
                     else
-                        result += ", " + value;
+                        result += settingValue.Value;
                 }
                 result += '\n';
-            }
-            foreach (string key in manual.Keys)
-            {
-                result += key + " = ";
-                foreach(Entry entry in manual[key])
-                {
-                    result += $"{{ {entry.longname}, {entry.type}, {entry.leader}, {entry.start} }}\n";
-                }
             }
             return result;
         }

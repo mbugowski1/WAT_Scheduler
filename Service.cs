@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Topshelf;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace WAT_Planner
 {
@@ -14,8 +15,6 @@ namespace WAT_Planner
         public bool Start(HostControl hostControl)
         {
             //new Thread(new ParameterizedThreadStart(Worker)).Start(hostControl);
-            Config test = new Config(Data.ConfigPath);
-            Debug.WriteLine(test.ToString());
             return true;
         }
 

@@ -11,5 +11,10 @@
         public System.DateTime start;
         public System.DateTime stop;
         public int timeIndex;
+
+        public override string ToString()
+        {
+            return $"{{ {longname} - {leader} ({type}) {start}}}";
+        }
     }
 }
