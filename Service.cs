@@ -11,7 +11,7 @@ namespace WAT_Planner
 {
     class Service : ServiceControl
     {
-        string[] groups = { "WCY19IJ4S1" };
+        Config config = new Config(Data.ConfigPath);
         public bool Start(HostControl hostControl)
         {
             new Thread(new ParameterizedThreadStart(Worker)).Start(hostControl);
@@ -24,7 +24,9 @@ namespace WAT_Planner
         }
         (string, string) LoadPassword()
         {
-            string login = Encoding.UTF8.GetString(Password.Load(Data.LoginPath));
+            //string login = Encoding.UTF8.GetString(Password.Load(Data.LoginPath));
+            if (!config.GetFirstString("Login", out string login))
+                throw new ArgumentNullException("Login was not defined");
             string password;
             using (Password passwordReader = new Password())
             {
@@ -34,8 +36,13 @@ namespace WAT_Planner
         }
         public async void Worker(object hostControl) 
         {
+            if(!config.GetString("Groups", out string[] groups))
+            {
+                //TODO LOG
+                ((HostControl)hostControl).Stop();
+            }
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            Task<CalendarConnection[]> calendarsTask = Calendar();
+            Task<CalendarConnection[]> calendarsTask = Calendar(groups);
             Schedule[] schedules;
 
             (string, string) credentials;
@@ -78,7 +85,7 @@ namespace WAT_Planner
                 schedules[i] = await scheduleTasks[i];
             return schedules;
         }
-        async Task<CalendarConnection[]> Calendar()
+        async Task<CalendarConnection[]> Calendar(string[] groups)
         {
             await CalendarConnection.Connect();
             return await CalendarConnection.GetCalendars(groups);
