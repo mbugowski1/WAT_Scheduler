@@ -220,23 +220,15 @@ namespace WAT_Planner
                 bool first = true;
                 foreach (Setting setting in settings[key])
                 {
-                    if (first)
-                    {
-                        first = false;
-                        result += value;
-                    }
+                    if (!first)
+                        result += ", ";
+                    if (setting.Brackets)
+                        result += (Entry)setting.Value;
                     else
-                        result += ", " + value;
+                        foreach (string value in (string[])setting.Value)
+                            result += value + " ";
                 }
                 result += '\n';
-            }
-            foreach (string key in manual.Keys)
-            {
-                result += key + " = ";
-                foreach(Entry entry in manual[key])
-                {
-                    result += $"{{ {entry.longname}, {entry.type}, {entry.leader}, {entry.start} }}\n";
-                }
             }
             return result;
         }
