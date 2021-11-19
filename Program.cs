@@ -21,6 +21,10 @@ namespace WAT_Planner
                     service.WhenStopped((body, control) => body.Stop(control));
                 });
                 serviceConf.RunAsLocalSystem();
+                serviceConf.StartAutomaticallyDelayed();
+                serviceConf.SetDescription("Service synchronizing edziekanat WAT with Google Calendar");
+                serviceConf.SetDisplayName("WAT Planner");
+                serviceConf.SetServiceName("Wat_Planner");
             }).Run();
         }
     }
