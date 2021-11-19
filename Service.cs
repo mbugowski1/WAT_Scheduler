@@ -14,7 +14,7 @@ namespace WAT_Planner
         string[] groups = { "WCY19IJ4S1" };
         public bool Start(HostControl hostControl)
         {
-            //new Thread(new ParameterizedThreadStart(Worker)).Start(hostControl);
+            new Thread(new ParameterizedThreadStart(Worker)).Start(hostControl);
             return true;
         }
 
@@ -24,11 +24,11 @@ namespace WAT_Planner
         }
         (string, string) LoadPassword()
         {
-            string login = Encoding.UTF8.GetString(Password.Load("login.wat"));
+            string login = Encoding.UTF8.GetString(Password.Load(Data.LoginPath));
             string password;
             using (Password passwordReader = new Password())
             {
-                password = passwordReader.decrypt(Password.Load("password.wat"));
+                password = passwordReader.decrypt(Password.Load(Data.PasswordPath));
             }
             return (login, password);
         }
@@ -52,7 +52,7 @@ namespace WAT_Planner
             Page page = new Page(credentials.Item1, credentials.Item2);
             credentials.Item1 = null;
             credentials.Item2 = null;
-            schedules = new Schedule[] { await page.LoadSchedule(groups[0], 2021, 1, Encoding.GetEncoding("ISO-8859-2").GetString(Password.Load("C:/Users/Michal/Desktop/J4.html"))) };
+            schedules = new Schedule[] { await page.LoadSchedule(groups[0], 2021, 1) };
             CalendarConnection[] calendars = await calendarsTask;
             foreach (Schedule schedule in schedules)
             {
