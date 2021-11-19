@@ -37,7 +37,7 @@ namespace WAT_Planner
             "ManualAdd",
             "ManualDelete"
         };
-        Dictionary<string, Setting[]> settings = new Dictionary<string, Setting[]>();
+        Dictionary<string, List<Setting>> settings = new Dictionary<string, List<Setting>>();
         public Config(in string file)
         {
             if (!File.Exists(file))
@@ -68,7 +68,7 @@ namespace WAT_Planner
                 {
                     string[] seperated = line.Split('=', 2);
                     if (settings.ContainsKey(seperated[0])) return;
-                    Setting[] sets;
+                    List<Setting> sets = new List<Setting>();
                     if (seperated[1].Contains('{') && seperated[1].Contains('}'))
                     {
                         int stop = 0;
@@ -80,16 +80,16 @@ namespace WAT_Planner
                             string textToEdit = seperated[1].Substring(start, stop - start);
                             pairs.Add(GetDictionary(textToEdit));
                         }
-                        sets = new Setting[pairs.Count];
-                        for (int i = 0; i < sets.Length; i++)
-                            sets[i] = new Setting(pairs[i], true);
+                        pairs.ForEach(x =>
+                        {
+                            sets.Add(new Setting(x, true));
+                        });
                     }
                     else
                     {
                         string[] values = seperated[1].Split(',');
-                        sets = new Setting[values.Length];
                         for (int i = 0; i < values.Length; i++)
-                            sets[i] = new Setting(values[i], false);
+                            sets.Add(new Setting(values[i], false));
                     }
                     settings.Add(seperated[0], sets);
                 }
@@ -152,25 +152,28 @@ namespace WAT_Planner
             }
             return result;
         }
-        public bool GetDictionary(string setting, out Dictionary<string, string>[] result)
+        public bool GetDictionary(string setting, out List<Dictionary<string, string>> result)
         {
-            if (!settings.TryGetValue(setting, out Setting[] sets))
+            if (!settings.TryGetValue(setting, out List<Setting> sets))
             {
                 result = null;
                 return false;
             }
-            result = new Dictionary<string, string>[sets.Length];
-            for (int i = 0; i < sets.Length; i++)
+            if(sets.Exists(x => x.IsDictionary == false))
             {
-                if (sets[i].IsDictionary == false)
-                    throw new ArgumentException("Tried to read from non brackets setting");
-                result[i] = (Dictionary<string, string>)sets[i].Value;
+                result = null;
+                return false;
+            }
+            result = new();
+            foreach(Setting x in sets)
+            {
+                result.Add((Dictionary<string, string>)x.Value);
             }
             return true;
         }
         public bool GetEntry(string setting, out List<EntryToAdd> entryToAdd)
         {
-            if (!settings.TryGetValue(setting, out Setting[] sets))
+            if (!settings.TryGetValue(setting, out List<Setting> sets))
             {
                 entryToAdd = null;
                 return false;
@@ -178,52 +181,57 @@ namespace WAT_Planner
             foreach (Setting set in sets)
                 if (set.IsDictionary == false)
                     throw new ArgumentException("Tried to read from non brackets setting");
-            entryToAdd.entry = new Entry[sets.Length];
-            for (int i = 0; i < sets.Length; i++)
+            entryToAdd = new();
+            foreach (Setting set in sets)
             {
-                Dictionary<string, string> pairs = (Dictionary<string, string>)sets[i].Value;
-                schedule = null;
+                EntryToAdd newer = new EntryToAdd
+                {
+                    entry = new(),
+                    schedule = null
+                };
+                Dictionary<string, string> pairs = (Dictionary<string, string>)set.Value;
                 string dateText = String.Empty, startTime = String.Empty, stopTime = String.Empty;
-                result[i] = new Entry();
                 bool done;
-                if (done = pairs.TryGetValue("short_name", out result[i].shortname))
-                    if (done = pairs.TryGetValue("long_name", out result[i].longname))
-                        if (done = pairs.TryGetValue("leader", out result[i].leader))
-                            if (done = pairs.TryGetValue("type", out result[i].type))
+                if (done = pairs.TryGetValue("short_name", out newer.entry.shortname))
+                    if (done = pairs.TryGetValue("long_name", out newer.entry.longname))
+                        if (done = pairs.TryGetValue("leader", out newer.entry.leader))
+                            if (done = pairs.TryGetValue("type", out newer.entry.type))
                                 if (done = pairs.TryGetValue("date", out dateText))
                                     if (done = pairs.TryGetValue("start_time", out startTime))
                                         if (done = pairs.TryGetValue("stop_time", out stopTime))
-                                            done = pairs.TryGetValue("schedule", out schedule);
-                if (done)
+                                            done = pairs.TryGetValue("schedule", out newer.schedule);
+                if(done)
                 {
                     DateTime date = GetDate(dateText);
-                    result[i].start = GetTime(date, startTime);
-                    result[i].stop = GetTime(date, stopTime);
-                    result[i].shortType = result[i].type.Substring(0, 1);
+                    newer.entry.start = GetTime(date, startTime);
+                    newer.entry.stop = GetTime(date, stopTime);
+                    newer.entry.shortType = newer.entry.type.Substring(0, 1);
                 }
                 else
                     throw new ArgumentException("Error in config file or its not and Entry");
+                entryToAdd.Add(newer);
             }
             return true;
         }
-        public bool GetString(string setting, out string[] result)
+        public bool GetString(string setting, out List<string> result)
         {
-            if (!settings.TryGetValue(setting, out Setting[] sets))
+            if (!settings.TryGetValue(setting, out List<Setting> sets))
             {
                 result = null;
                 return false;
             }
-            foreach (Setting set in sets)
-                if (set.IsDictionary == true)
-                    throw new ArgumentException("Tried to read from brackets setting");
-            result = new string[sets.Length];
-            for (int i = 0; i < sets.Length; i++)
-                result[i] = (string)sets[i].Value;
+            if(sets.Exists(x => x.IsDictionary == true))
+                throw new ArgumentException("Tried to read from brackets setting");
+            result = new();
+            foreach (var set in sets)
+            {
+                result.Add((string)set.Value);
+            }
             return true;
         }
         public bool GetFirstString(string setting, out string result)
         {
-            bool notFaulty = GetString(setting, out string[] array);
+            bool notFaulty = GetString(setting, out List<string> array);
             result = array[0];
             return notFaulty;
         }
@@ -244,7 +252,7 @@ namespace WAT_Planner
         public override string ToString()
         {
             string result = String.Empty;
-            foreach (KeyValuePair<string, Setting[]> setting in settings)
+            foreach (KeyValuePair<string, List<Setting>> setting in settings)
             {
                 result += setting.Key + " = ";
                 bool first = true;
