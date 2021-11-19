@@ -46,7 +46,7 @@ namespace WAT_Planner
             {
                 //Remove white symbols and split brackets
                 string config = Encoding.UTF8.GetString(File.ReadAllBytes(file));
-                config = PullBrackets(RemoveChars(config, new char[] { ' ', '\t', '\r' }));
+                config = PullBracketsAnRemoveWhiteChars(config, new char[] { ' ', '\t', '\r' });
                 //Seperate lines
                 string[] lines = config.Split('\n');
                 //Add newline at the end
@@ -93,32 +93,27 @@ namespace WAT_Planner
                 }
             }
         }
-        string PullBrackets(in string text)
+        string PullBracketsAnRemoveWhiteChars(in string text)
         {
+            char[] excluded = { ' ', '\t', '\r' };
             int startIndex = 0;
+            bool inside = false;
             StringBuilder modifier = new StringBuilder(text);
             for (int i = 0; i < modifier.Length; i++)
             {
                 if (modifier[i] == '{')
                 {
                     startIndex = i;
+                    inside = true;
                 }
                 else if (modifier[i] == '}')
                 {
                     modifier.Replace("\n", "", startIndex, i - startIndex);
+                    inside = false;
                 }
-            }
-            return modifier.ToString();
-        }
-        string RemoveChars(in string text, char[] excluded)
-        {
-            StringBuilder modifier = new StringBuilder(text);
-            for (int i = 0; i < modifier.Length; i++)
-            {
-                if(excluded.Contains(modifier[i]))
-                {
-                    modifier.Remove(i--, 1);
-                }
+                if (!inside)
+                    if (excluded.Contains(modifier[i]))
+                        modifier.Remove(i--, 1);
             }
             return modifier.ToString();
         }
