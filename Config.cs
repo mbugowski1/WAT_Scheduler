@@ -203,21 +203,11 @@ namespace WAT_Planner
                 {
                     if (!first)
                         result += ", ";
-                    else
-                        first = false;
                     if (setting.Brackets)
-                    {
-                        var values = (Dictionary<string, string>[])setting.Value;
-                        foreach(Dictionary<string, string> dic in values)
-                        {
-                            result += "{ ";
-                            foreach (KeyValuePair<string, string> pair in dic)
-                                result += $"{pair.Key}={pair.Value}{Environment.NewLine}";
-                            result += " }";
-                        }
-                    }
+                        result += (Entry)setting.Value;
                     else
-                        result += setting.Value;
+                        foreach (string value in (string[])setting.Value)
+                            result += value + " ";
                 }
                 result += '\n';
             }
