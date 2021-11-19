@@ -15,6 +15,7 @@ namespace WAT_Planner
         public bool Start(HostControl hostControl)
         {
             new Thread(new ParameterizedThreadStart(Worker)).Start(hostControl);
+            //test
             return true;
         }
 
