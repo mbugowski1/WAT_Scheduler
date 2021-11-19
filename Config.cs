@@ -145,29 +145,43 @@ namespace WAT_Planner
             }
             return result;
         }
-        Entry GetEntry(Dictionary<string, string> pairs, out string schedule)
+        public Entry[] GetEntry(string entry, out string schedule)
         {
             schedule = null;
-            string dateText = String.Empty, startTime = String.Empty, stopTime = String.Empty;
-            Entry result = new Entry();
-            bool done;
-            if (done = pairs.TryGetValue("short_name", out result.shortname))
-                if (done = pairs.TryGetValue("long_name", out result.longname))
-                    if (done = pairs.TryGetValue("leader", out result.leader))
-                        if (done = pairs.TryGetValue("type", out result.type))
-                            if (done = pairs.TryGetValue("date", out dateText))
-                                if (done = pairs.TryGetValue("start_time", out startTime))
-                                    if (done = pairs.TryGetValue("stop_time", out stopTime))
-                                        done = pairs.TryGetValue("schedule", out schedule);
-            if (done)
+            if (!settings.TryGetValue(entry, out Setting[] sets))
             {
-                DateTime date = GetDate(dateText);
-                result.start = GetTime(date, startTime);
-                result.stop = GetTime(date, stopTime);
-                result.shortType = result.type.Substring(0, 1);
-                return result;
+                return null;
             }
-            return null;
+            foreach (Setting set in sets)
+                if (set.Brackets == false)
+                    throw new ArgumentException("Tried to read from non brackets setting");
+            Entry[] result = new Entry[sets.Length];
+            for (int i = 0; i < sets.Length; i++)
+            {
+                Dictionary<string, string> pairs = (Dictionary<string, string>)sets[i].Value;
+                schedule = null;
+                string dateText = String.Empty, startTime = String.Empty, stopTime = String.Empty;
+                result[i] = new Entry();
+                bool done;
+                if (done = pairs.TryGetValue("short_name", out result[i].shortname))
+                    if (done = pairs.TryGetValue("long_name", out result[i].longname))
+                        if (done = pairs.TryGetValue("leader", out result[i].leader))
+                            if (done = pairs.TryGetValue("type", out result[i].type))
+                                if (done = pairs.TryGetValue("date", out dateText))
+                                    if (done = pairs.TryGetValue("start_time", out startTime))
+                                        if (done = pairs.TryGetValue("stop_time", out stopTime))
+                                            done = pairs.TryGetValue("schedule", out schedule);
+                if (done)
+                {
+                    DateTime date = GetDate(dateText);
+                    result[i].start = GetTime(date, startTime);
+                    result[i].stop = GetTime(date, stopTime);
+                    result[i].shortType = result[i].type.Substring(0, 1);
+                }
+                else
+                    throw new ArgumentException("Error in config file");
+            }
+            return result;
         }
         void Write(in string filePath, List<string> settings)
         {
