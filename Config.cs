@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace WAT_Planner
 {
@@ -149,6 +148,22 @@ namespace WAT_Planner
                 result.Add(values[0], values[1]);
             }
             return result;
+        }
+        public bool GetDictionary(string setting, out Dictionary<string, string>[] result)
+        {
+            if (!settings.TryGetValue(setting, out Setting[] sets))
+            {
+                result = null;
+                return false;
+            }
+            result = new Dictionary<string, string>[sets.Length];
+            for (int i = 0; i < sets.Length; i++)
+            {
+                if (sets[i].IsDictionary == false)
+                    throw new ArgumentException("Tried to read from non brackets setting");
+                result[i] = (Dictionary<string, string>)sets[i].Value;
+            }
+            return true;
         }
         public bool GetEntry(string setting, out Entry[] result, out string schedule)
         {

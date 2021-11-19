@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Topshelf;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace WAT_Planner
 {
@@ -14,11 +15,6 @@ namespace WAT_Planner
         public bool Start(HostControl hostControl)
         {
             //new Thread(new ParameterizedThreadStart(Worker)).Start(hostControl);
-            Config test = new Config(Data.ConfigPath);
-            bool done = test.GetEntry("ManualAdd", out Entry[] testingEntries, out string schedule);
-            Console.WriteLine(@"Done: {0}", done);
-            Console.WriteLine(@"Schedule: {0}", schedule);
-            Console.WriteLine(@"AAA: {0}", testingEntries[0]);
             return true;
         }
 
