@@ -145,61 +145,29 @@ namespace WAT_Planner
             }
             return result;
         }
-        Entry GetEntry(string text)
+        Entry GetEntry(Dictionary<string, string> pairs, out string schedule)
         {
-            string shortName = String.Empty, longName = String.Empty, leader = String.Empty, type = String.Empty, startTime = null, stopTime = null;
-            DateTime start = DateTime.Now, stop = DateTime.Now;
-            DateTime? date = null;
-            string[] options = text.Split(',');
-            foreach(string option in options)
+            schedule = null;
+            string dateText = String.Empty, startTime = String.Empty, stopTime = String.Empty;
+            Entry result = new Entry();
+            bool done;
+            if (done = pairs.TryGetValue("short_name", out result.shortname))
+                if (done = pairs.TryGetValue("long_name", out result.longname))
+                    if (done = pairs.TryGetValue("leader", out result.leader))
+                        if (done = pairs.TryGetValue("type", out result.type))
+                            if (done = pairs.TryGetValue("date", out dateText))
+                                if (done = pairs.TryGetValue("start_time", out startTime))
+                                    if (done = pairs.TryGetValue("stop_time", out stopTime))
+                                        done = pairs.TryGetValue("schedule", out schedule);
+            if (done)
             {
-                if (!option.Contains('=')) continue;
-                string[] values = option.Split('=', 2);
-                string key = values[0];
-                string value = values[1];
-                switch (key)
-                {
-                    case "short_name":
-                        shortName = value;
-                        break;
-                    case "long_name":
-                        longName = value;
-                        break;
-                    case "leader":
-                        leader = value;
-                        break;
-                    case "type":
-                        type = value;
-                        break;
-                    case "date":
-                        date = GetDate(value);
-                        break;
-                    case "start_time":
-                        startTime = value;
-                        break;
-                    case "stop_time":
-                        stopTime = value;
-                        break;
-                }
+                DateTime date = GetDate(dateText);
+                result.start = GetTime(date, startTime);
+                result.stop = GetTime(date, stopTime);
+                result.shortType = result.type.Substring(0, 1);
+                return result;
             }
-            if(date != null)
-            {
-                if (startTime != null)
-                    start = GetTime((DateTime)date, startTime);
-                if (stopTime != null)
-                    stop = GetTime((DateTime)date, stopTime);
-            }
-            Entry result = new Entry
-            {
-                shortname = shortName,
-                longname = longName,
-                leader = leader,
-                type = type,
-                start = start,
-                stop = stop,
-                shortType = type.Substring(0, 1)
-            };
-            return result;
+            return null;
         }
         void Write(in string filePath, List<string> settings)
         {
