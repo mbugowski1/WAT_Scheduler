@@ -15,7 +15,10 @@ namespace WAT_Planner
         {
             //new Thread(new ParameterizedThreadStart(Worker)).Start(hostControl);
             Config test = new Config(Data.ConfigPath);
-            Debug.WriteLine(test.ToString());
+            bool done = test.GetEntry("ManualAdd", out Entry[] testingEntries, out string schedule);
+            Console.WriteLine(@"Done: {0}", done);
+            Console.WriteLine(@"Schedule: {0}", schedule);
+            Console.WriteLine(@"AAA: {0}", testingEntries[0]);
             return true;
         }
 

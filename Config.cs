@@ -150,17 +150,18 @@ namespace WAT_Planner
             }
             return result;
         }
-        public Entry[] GetEntry(string entry, out string schedule)
+        public bool GetEntry(string setting, out Entry[] result, out string schedule)
         {
             schedule = null;
-            if (!settings.TryGetValue(entry, out Setting[] sets))
+            if (!settings.TryGetValue(setting, out Setting[] sets))
             {
-                return null;
+                result = null;
+                return false;
             }
             foreach (Setting set in sets)
                 if (set.IsDictionary == false)
                     throw new ArgumentException("Tried to read from non brackets setting");
-            Entry[] result = new Entry[sets.Length];
+            result = new Entry[sets.Length];
             for (int i = 0; i < sets.Length; i++)
             {
                 Dictionary<string, string> pairs = (Dictionary<string, string>)sets[i].Value;
@@ -184,9 +185,30 @@ namespace WAT_Planner
                     result[i].shortType = result[i].type.Substring(0, 1);
                 }
                 else
-                    throw new ArgumentException("Error in config file");
+                    throw new ArgumentException("Error in config file or its not and Entry");
             }
-            return result;
+            return true;
+        }
+        public bool GetString(string setting, out string[] result)
+        {
+            if (!settings.TryGetValue(setting, out Setting[] sets))
+            {
+                result = null;
+                return false;
+            }
+            foreach (Setting set in sets)
+                if (set.IsDictionary == true)
+                    throw new ArgumentException("Tried to read from brackets setting");
+            result = new string[sets.Length];
+            for (int i = 0; i < sets.Length; i++)
+                result[i] = (string)sets[i].Value;
+            return true;
+        }
+        public bool GetFirstString(string setting, out string result)
+        {
+            bool notFaulty = GetString(setting, out string[] array);
+            result = array[0];
+            return notFaulty;
         }
         void Write(in string filePath, List<string> settings)
         {
