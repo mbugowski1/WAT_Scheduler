@@ -24,7 +24,6 @@ namespace WAT_Planner
         }
         (string, string) LoadPassword()
         {
-            //string login = Encoding.UTF8.GetString(Password.Load(Data.LoginPath));
             if (!config.GetFirstString("Login", out string login))
                 throw new ArgumentNullException("Login was not defined");
             string password;
@@ -60,6 +59,7 @@ namespace WAT_Planner
             credentials.Item1 = null;
             credentials.Item2 = null;
             schedules = new Schedule[] { await page.LoadSchedule(groups[0], 2021, 1) };
+            //WRONG PASSWORD EXCEPTION
             CalendarConnection[] calendars = await calendarsTask;
             foreach (Schedule schedule in schedules)
             {
