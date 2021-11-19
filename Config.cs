@@ -218,7 +218,7 @@ namespace WAT_Planner
             {
                 result += key + " = ";
                 bool first = true;
-                foreach (string value in settings[key])
+                foreach (Setting setting in settings[key])
                 {
                     if (first)
                     {
