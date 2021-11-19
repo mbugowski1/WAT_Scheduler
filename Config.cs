@@ -32,9 +32,6 @@ namespace WAT_Planner
             "ManualDelete"
         };
         Dictionary<string, Setting[]> settings = new Dictionary<string, Setting[]>();
-        //Dictionary<string, string[]> settings = new Dictionary<string, string[]>();
-        //Dictionary<string, Dictionary<string, string>> settings = new Dictionary<string, Dictionary<string, string>>();
-        //Dictionary<string, Entry[]> manual = new Dictionary<string, Entry[]>();
         public Config(in string file)
         {
             if (!File.Exists(file))
