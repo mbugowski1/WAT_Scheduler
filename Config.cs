@@ -11,17 +11,17 @@ namespace WAT_Planner
     {
         private class Setting
         {
-            public bool Brackets { private set; get; }
+            public bool IsDictionary { private set; get; }
             public object Value { private set; get; }
             public Setting(object value, bool brackets)
             {
                 Value = value;
-                Brackets = brackets;
+                IsDictionary = brackets;
             }
             public void SetValue(object value, bool brackets)
             {
                 Value = value;
-                Brackets = brackets;
+                IsDictionary = brackets;
             }
         }
         static readonly string[] defaultSettings = new string[]
@@ -80,7 +80,7 @@ namespace WAT_Planner
                         }
                         sets = new Setting[pairs.Count];
                         for (int i = 0; i < sets.Length; i++)
-                            sets[i] = new Setting(pairs.ToArray(), true);
+                            sets[i] = new Setting(pairs[i], true);
                     }
                     else
                     {
@@ -158,7 +158,7 @@ namespace WAT_Planner
                 return null;
             }
             foreach (Setting set in sets)
-                if (set.Brackets == false)
+                if (set.IsDictionary == false)
                     throw new ArgumentException("Tried to read from non brackets setting");
             Entry[] result = new Entry[sets.Length];
             for (int i = 0; i < sets.Length; i++)
@@ -205,29 +205,26 @@ namespace WAT_Planner
         public override string ToString()
         {
             string result = String.Empty;
-            foreach (string key in settings.Keys)
+            foreach (KeyValuePair<string, Setting[]> setting in settings)
             {
-                result += key + " = ";
+                result += setting.Key + " = ";
                 bool first = true;
-                foreach (Setting setting in settings[key])
+                foreach (Setting settingValue in setting.Value)
                 {
                     if (!first)
                         result += ", ";
                     else
                         first = false;
-                    if (setting.Brackets)
+                    if (settingValue.IsDictionary)
                     {
-                        var values = (Dictionary<string, string>[])setting.Value;
-                        foreach(Dictionary<string, string> dic in values)
-                        {
-                            result += "{ ";
-                            foreach (KeyValuePair<string, string> pair in dic)
-                                result += $"{pair.Key}={pair.Value}{Environment.NewLine}";
-                            result += " }";
-                        }
+                        var values = (Dictionary<string, string>)settingValue.Value;
+                        result += "{\n";
+                            foreach (KeyValuePair<string, string> pair in values)
+                                result += $"\t{pair.Key}={pair.Value}{Environment.NewLine}";
+                        result += "}";
                     }
                     else
-                        result += setting.Value;
+                        result += settingValue.Value;
                 }
                 result += '\n';
             }
