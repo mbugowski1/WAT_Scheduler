@@ -194,22 +194,8 @@ namespace WAT_Planner
             List<string> write = new List<string>();
             foreach (string key in defaultSettings)
                 if (!settings.ContainsKey(key))
-                    if(!manual.ContainsKey(key))
-                        write.Add(key);
+                    write.Add(key);
             Write(filePath, write);
-        }
-        public string[] GetString(string key)
-        {
-            if (settings.TryGetValue(key, out string[] result))
-                return result;
-            else return null;
-        }
-        public string GetStringFirst(string key)
-        {
-            string[] result = GetString(key);
-            if (result != null)
-                return result[0];
-            else return null;
         }
         public override string ToString()
         {
