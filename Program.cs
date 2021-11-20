@@ -13,11 +13,13 @@ namespace WAT_Planner
         public static void Run()
         {
             string login, password;
-            string[] groups;
-            Entry[] entriesToAdd;
+            List<string> groups;
+            List<Config.EntryToAdd> manualAdds;
+            //List<Entry> manualDeletes;
+
             if (!LoadCredentials(out login, out password)) return;
             config.GetString("Groups", out groups);
-            config.GetEntry("ManualAdd", entriesToAdd, )
+            config.GetEntry("ManualAdd", out manualAdds);
 
         }
         static bool LoadCredentials(out string login, out string password)
