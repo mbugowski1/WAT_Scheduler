@@ -8,10 +8,39 @@ namespace WAT_Planner
 {
     class Config
     {
-        public struct EntryToAdd
+        static readonly string loginTag = "Login";
+        static readonly string groupsTag = "Groups";
+        static readonly string subjectsTag = "SubjectFromGroup";
+        static readonly string addsTag = "ManualAdd";
+        static readonly string deletesTag = "ManualDelete";
+
+
+        public struct ManualAdd
         {
             public Entry entry;
             public string schedule;
+        }
+        public struct SubjectFromGroup
+        {
+            public string shortname;
+            public string leader;
+            public string type;
+            public int year;
+            public int semester;
+            public string scheduleFrom;
+            public string scheduleTo;
+        }
+        public struct ManualDelete
+        {
+            public DateTime start;
+            public string schedule;
+        }
+        public struct Group
+        {
+            public string group;
+            public int year;
+            public int semester;
+            public string calendarName;
         }
 
         private class Setting
@@ -78,7 +107,7 @@ namespace WAT_Planner
                             int start = seperated[1].IndexOf('{', stop) + 1;
                             stop = seperated[1].IndexOf('}', start);
                             string textToEdit = seperated[1].Substring(start, stop - start);
-                            pairs.Add(GetDictionary(textToEdit));
+                            pairs.Add(CreateDictionary(textToEdit));
                         }
                         pairs.ForEach(x =>
                         {
@@ -129,18 +158,18 @@ namespace WAT_Planner
             }
             return modifier.ToString();
         }
-        DateTime GetDate(string date)
+        DateTime CreateDate(string date)
         {
             string[] dateStrings = date.Split('-', 3);
             return new DateTime(Int32.Parse(dateStrings[0]), Int32.Parse(dateStrings[1]), Int32.Parse(dateStrings[2]));
         }
-        DateTime GetTime(DateTime date, string time)
+        DateTime CreateTime(DateTime date, string time)
         {
             string[] timeStrings = time.Split(':', 2);
             DateTime result = new DateTime(date.Year, date.Month, date.Day, Int32.Parse(timeStrings[0]), Int32.Parse(timeStrings[1]), 0);
             return result;
         }
-        Dictionary<string, string> GetDictionary(string text)
+        Dictionary<string, string> CreateDictionary(string text)
         {
             string[] options = text.Split(',');
             Dictionary<string, string> result = new Dictionary<string, string>();
@@ -161,6 +190,7 @@ namespace WAT_Planner
             }
             if(sets.Exists(x => x.IsDictionary == false))
             {
+                //log
                 result = null;
                 return false;
             }
@@ -171,45 +201,189 @@ namespace WAT_Planner
             }
             return true;
         }
-        public bool GetEntry(string setting, out List<EntryToAdd> entryToAdd)
+        bool CheckStruct(Dictionary<string, string> dictionary, string[] tags)
         {
-            if (!settings.TryGetValue(setting, out List<Setting> sets))
+            
+            return true;
+        }
+        bool GetEntry(out List<ManualAdd> result)
+        {
+            if (GetDictionary(addsTag, out List<Dictionary<string, string>> sets))
             {
-                entryToAdd = null;
+                result = null;
                 return false;
             }
-            foreach (Setting set in sets)
-                if (set.IsDictionary == false)
-                    throw new ArgumentException("Tried to read from non brackets setting");
-            entryToAdd = new();
-            foreach (Setting set in sets)
+            string[] tags =
             {
-                EntryToAdd newer = new EntryToAdd
+                "short_name",
+                "long_name",
+                "leader",
+                "type",
+                "date",
+                "start_time",
+                "stop_time",
+                "schedule"
+            };
+            foreach (string tag in tags)
+            {
+                foreach (var set in sets)
+                {
+                    if (!set.ContainsKey(tag))
+                    {
+                        result = null;
+                        return false;
+                    }
+                }
+            }
+
+            result = new();
+            foreach (var set in sets)
+            {
+                ManualAdd newer = new ManualAdd
                 {
                     entry = new(),
                     schedule = null
                 };
-                Dictionary<string, string> pairs = (Dictionary<string, string>)set.Value;
-                string dateText = String.Empty, startTime = String.Empty, stopTime = String.Empty;
-                bool done;
-                if (done = pairs.TryGetValue("short_name", out newer.entry.shortname))
-                    if (done = pairs.TryGetValue("long_name", out newer.entry.longname))
-                        if (done = pairs.TryGetValue("leader", out newer.entry.leader))
-                            if (done = pairs.TryGetValue("type", out newer.entry.type))
-                                if (done = pairs.TryGetValue("date", out dateText))
-                                    if (done = pairs.TryGetValue("start_time", out startTime))
-                                        if (done = pairs.TryGetValue("stop_time", out stopTime))
-                                            done = pairs.TryGetValue("schedule", out newer.schedule);
-                if(done)
+                newer.entry.shortname = set["short_name"];
+                newer.entry.longname = set["long_name"];
+                newer.entry.leader = set["leader"];
+                newer.entry.type = set["type"];
+                string dateText = set["date"];
+                string startTime = set["start_time"];
+                string stopTime = set["stop_time"];
+                newer.schedule = set["schedule"];
+
+                DateTime date = CreateDate(dateText);
+                newer.entry.start = CreateTime(date, startTime);
+                newer.entry.stop = CreateTime(date, stopTime);
+                newer.entry.shortType = newer.entry.type.Substring(0, 1);
+                result.Add(newer);
+            }
+            return true;
+        }
+        public bool GetSubjectFromGroup(out List<SubjectFromGroup> result)
+        {
+            if (GetDictionary(subjectsTag, out List<Dictionary<string, string>> sets))
+            {
+                result = null;
+                return false;
+            }
+            string[] tags =
+            {
+                "short_name",
+                "leader",
+                "type",
+                "scheduleFrom",
+                "scheduleTo"
+            };
+            foreach (string tag in tags)
+            {
+                foreach (var set in sets)
                 {
-                    DateTime date = GetDate(dateText);
-                    newer.entry.start = GetTime(date, startTime);
-                    newer.entry.stop = GetTime(date, stopTime);
-                    newer.entry.shortType = newer.entry.type.Substring(0, 1);
+                    if (!set.ContainsKey(tag))
+                    {
+                        result = null;
+                        return false;
+                    }
                 }
-                else
-                    throw new ArgumentException("Error in config file or its not and Entry");
-                entryToAdd.Add(newer);
+            }
+            result = new();
+            foreach (var set in sets)
+            {
+                SubjectFromGroup subject = new SubjectFromGroup
+                {
+                    shortname = set["short_name"],
+                    leader = set["leader"],
+                    type = set["type"],
+                    scheduleFrom = set["scheduleFrom"],
+                    scheduleTo = set["scheduleTo"],
+                };
+                if(!Int32.TryParse(set["year"], out subject.year) || !Int32.TryParse(set["semester"], out subject.semester))
+                {
+                    //log
+                    result = null;
+                    return false;
+                }
+                result.Add(subject);
+            }
+            return true;
+        }
+        public bool GetGroups(out List<Group> result)
+        {
+            if (GetDictionary(groupsTag, out List<Dictionary<string, string>> sets))
+            {
+                result = null;
+                return false;
+            }
+            string[] tags =
+            {
+                "groupName",
+                "year",
+                "semester",
+                "calendarName"
+            };
+            foreach (string tag in tags)
+            {
+                foreach (var set in sets)
+                {
+                    if (!set.ContainsKey(tag))
+                    {
+                        result = null;
+                        return false;
+                    }
+                }
+            }
+            result = new();
+            foreach(var set in sets)
+            {
+                Group group = new Group
+                {
+                    group = set["groupName"],
+                    calendarName = set["calendarName"]
+                };
+                if(!Int32.TryParse(set["year"], out group.year) || !Int32.TryParse(set["semester"], out group.semester))
+                {
+                    //log
+                    result = null;
+                    return false;
+                }
+                result.Add(group);
+            }
+            return true;
+        }
+        public bool GetManualDelete(out List<ManualDelete> result)
+        {
+            if (GetDictionary(deletesTag, out List<Dictionary<string, string>> sets))
+            {
+                result = null;
+                return false;
+            }
+            string[] tags =
+            {
+                "date",
+                "start_time",
+                "schedule"
+            };
+            foreach (string tag in tags)
+            {
+                foreach (var set in sets)
+                {
+                    if (!set.ContainsKey(tag))
+                    {
+                        result = null;
+                        return false;
+                    }
+                }
+            }
+            result = new();
+            foreach (var set in sets)
+            {
+                ManualDelete group = new ManualDelete
+                {
+                    start = CreateTime(CreateDate(set["date"]), set["start_time"]),
+                    schedule = set["schedule"]
+                };
+                result.Add(group);
             }
             return true;
         }

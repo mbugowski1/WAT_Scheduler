@@ -14,7 +14,7 @@ namespace WAT_Planner
         {
             string login, password;
             List<string> groups;
-            List<Config.EntryToAdd> manualAdds;
+            List<Config.ManualAdd> manualAdds;
             //List<Entry> manualDeletes;
 
             if (!LoadCredentials(out login, out password)) return;
