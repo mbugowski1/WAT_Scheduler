@@ -19,6 +19,10 @@ namespace WAT_Planner
         {
             public Entry entry;
             public string schedule;
+            public override string ToString()
+            {
+                return $"ManualAdd {{\n\tentry={entry}\n\tschedule={schedule}\n}}";
+            }
         }
         public struct SubjectFromGroup
         {
@@ -29,11 +33,20 @@ namespace WAT_Planner
             public int semester;
             public string scheduleFrom;
             public string scheduleTo;
+            public override string ToString()
+            {
+                return $"SubjectFromGroup {{\n\tshortname={shortname}\n\tleader={leader}\n\ttype={type}\n\tyear={year}\n\tsemester={semester}\n\t" +
+                    $"scheduleFrom={scheduleFrom}\n\tscheduleTo={scheduleTo}\n}}";
+            }
         }
         public struct ManualDelete
         {
             public DateTime start;
             public string schedule;
+            public override string ToString()
+            {
+                return $"ManualDelete {{\n\tstart={start}\n\tschedule={schedule}\n}}";
+            }
         }
         public struct Group
         {
@@ -41,6 +54,10 @@ namespace WAT_Planner
             public int year;
             public int semester;
             public string calendarName;
+            public override string ToString()
+            {
+                return $"Group {{\n\tgroup={group}\n\tyear={year}\n\tsemester={semester}\n\tcalendarName={calendarName}\n}}";
+            }
         }
 
         private class Setting
@@ -201,14 +218,9 @@ namespace WAT_Planner
             }
             return true;
         }
-        bool CheckStruct(Dictionary<string, string> dictionary, string[] tags)
+        public bool GetManualAdds(out List<ManualAdd> result)
         {
-            
-            return true;
-        }
-        bool GetEntry(out List<ManualAdd> result)
-        {
-            if (GetDictionary(addsTag, out List<Dictionary<string, string>> sets))
+            if (!GetDictionary(addsTag, out List<Dictionary<string, string>> sets))
             {
                 result = null;
                 return false;
@@ -263,7 +275,7 @@ namespace WAT_Planner
         }
         public bool GetSubjectFromGroup(out List<SubjectFromGroup> result)
         {
-            if (GetDictionary(subjectsTag, out List<Dictionary<string, string>> sets))
+            if (!GetDictionary(subjectsTag, out List<Dictionary<string, string>> sets))
             {
                 result = null;
                 return false;
@@ -310,7 +322,7 @@ namespace WAT_Planner
         }
         public bool GetGroups(out List<Group> result)
         {
-            if (GetDictionary(groupsTag, out List<Dictionary<string, string>> sets))
+            if (!GetDictionary(groupsTag, out List<Dictionary<string, string>> sets))
             {
                 result = null;
                 return false;
@@ -353,7 +365,7 @@ namespace WAT_Planner
         }
         public bool GetManualDelete(out List<ManualDelete> result)
         {
-            if (GetDictionary(deletesTag, out List<Dictionary<string, string>> sets))
+            if (!GetDictionary(deletesTag, out List<Dictionary<string, string>> sets))
             {
                 result = null;
                 return false;

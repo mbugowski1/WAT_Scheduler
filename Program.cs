@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -7,20 +8,22 @@ using System.Threading.Tasks;
 
 namespace WAT_Planner
 {
-    static class Program
+    public static class Program
     {
-        static Config config = new Config(Data.ConfigPath);
+        static readonly Config config = new(Data.ConfigPath);
         public static void Run()
         {
             string login, password;
-            List<string> groups;
+            List<Config.Group> groups;
+            List<Config.SubjectFromGroup> subjects;
             List<Config.ManualAdd> manualAdds;
-            //List<Entry> manualDeletes;
+            List<Config.ManualDelete> manualDeletes;
 
             if (!LoadCredentials(out login, out password)) return;
-            config.GetString("Groups", out groups);
-            config.GetEntry("ManualAdd", out manualAdds);
-
+            Debug.WriteLine("Groups: " + config.GetGroups(out groups));
+            Debug.WriteLine("GetSubjectFromGroup: " + config.GetSubjectFromGroup(out subjects));
+            Debug.WriteLine("GetManualAdds: " + config.GetManualAdds(out manualAdds));
+            Debug.WriteLine("GetManualDelete: " + config.GetManualDelete(out manualDeletes));
         }
         static bool LoadCredentials(out string login, out string password)
         {
@@ -40,7 +43,7 @@ namespace WAT_Planner
             return done;
 
         }
-        static void Log(string type, string text)
+        public static void Log(string type, string text)
         {
             File.AppendText($"{DateTime.Now.ToString()} {type}: {text}");
         }
