@@ -35,11 +35,12 @@ namespace WAT_Planner
         }
         public async void Worker(object hostControl) 
         {
-            if(!config.GetString("Groups", out string[] groups))
+            /*if(!config.GetString("Groups", out string[] groups))
             {
                 //TODO LOG
                 ((HostControl)hostControl).Stop();
-            }
+            }*/
+            string[] groups = { "WCY19IG1S1", "WCY19IJ4S1", "WCY19KC1S1" };
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             Task<CalendarConnection[]> calendarsTask = Calendar(groups);
             Schedule[] schedules;
