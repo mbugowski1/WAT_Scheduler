@@ -33,27 +33,20 @@ namespace WAT_Planner
                 // The file token.json stores the user's access and refresh tokens, and is created
                 // automatically when the authorization flow completes for the first time.
                 string credPath = "token.json";
-                    credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                        GoogleClientSecrets.FromStream(stream).Secrets,
-                        scopes,
-                        "WAT Plan",
-                        CancellationToken.None,
-                        new FileDataStore(credPath, true));
+                credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
+                    GoogleClientSecrets.FromStream(stream).Secrets,
+                    scopes,
+                    "WAT Plan",
+                    CancellationToken.None,
+                    new FileDataStore(credPath, true));
                 Console.WriteLine("Credential file saved to: " + credPath);
             }
-            try
+            // Create Google Calendar API service.
+            service = new CalendarService(new BaseClientService.Initializer()
             {
-                // Create Google Calendar API service.
-                service = new CalendarService(new BaseClientService.Initializer()
-                {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "WAT Plan",
-                });
-            }
-            catch (TokenResponseException e)
-            {
-                throw new NotImplementedException();
-            }
+                HttpClientInitializer = credential,
+                ApplicationName = "WAT Plan",
+            });
         }
         public async static Task<CalendarConnection[]> GetCalendars(String[] names)
         {

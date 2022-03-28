@@ -88,7 +88,13 @@ namespace WAT_Planner
         }
         async Task<CalendarConnection[]> Calendar(string[] groups)
         {
-            await CalendarConnection.Connect();
+            try
+            {
+                await CalendarConnection.Connect();
+            }catch(Google.Apis.Auth.OAuth2.Responses.TokenResponseException)
+            {
+                throw new NotImplementedException();
+            }
             return await CalendarConnection.GetCalendars(groups);
         }
     }
