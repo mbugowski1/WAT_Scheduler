@@ -4,7 +4,6 @@ namespace WAT_Planner
 {
     public struct Data
     {
-        public const int weekCount = 22;
         private static string DocsPath { get => Environment.GetFolderPath(Environment.SpecialFolder.Personal); }
         public static string HomePath { get => DocsPath + "\\wat_plan\\"; }
         public static string KeyPath { get => HomePath + "key.wat"; }

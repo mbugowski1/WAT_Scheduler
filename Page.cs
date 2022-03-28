@@ -4,6 +4,7 @@ using System.Threading;
 using System.Net.Http;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace WAT_Planner
 {
@@ -13,6 +14,8 @@ namespace WAT_Planner
         readonly HttpClient client = new HttpClient();
         public int[,] startHour = new int[2, 7];
         public int[,] endHour = new int[2, 7];
+
+        public int weekCount;
         DateTime startDate;
         string session;
 
@@ -149,6 +152,17 @@ namespace WAT_Planner
             }
             startDate = new DateTime(year, month, day);
         }
+        public int LoadWeeks(string content)
+        {
+            int counter = -1;
+            int pos = -1;
+            do
+            {
+                pos = content.IndexOf("thFormList1HSheTeaGrpHTM3", pos + 1);
+                counter++;
+            } while (pos != -1);
+            return counter;
+        }
         public async Task<Schedule> LoadSchedule(string group, int year, int semester, String strona)
         {
             Schedule schedule = new Schedule(group, year, semester);
@@ -156,6 +170,8 @@ namespace WAT_Planner
             //Ładowanie dat i czasów
             LoadTime(strona);
             LoadDates(strona, year);
+            LoadWeeks(strona);
+            
 
 
             int searchLength = "tdFormList1DSheTeaGrpHTM3".Length;
@@ -172,7 +188,7 @@ namespace WAT_Planner
                 {
                     tdIndex = strona.IndexOf("tdFormList1DSheTeaGrpHTM3", searchLength);
                     weekCounter++;
-                    if (weekCounter == Data.weekCount)
+                    if (weekCounter == weekCount)
                     {
                         hourCounter += 1;
                         weekCounter = 0;
@@ -218,7 +234,7 @@ namespace WAT_Planner
                 entry.timeIndex = hourCounter;
                 entry.stop = new DateTime(time.Year, time.Month, time.Day, endHour[0, hourCounter], endHour[1, hourCounter], 0);
                 weekCounter++;
-                if (weekCounter == Data.weekCount)
+                if (weekCounter == weekCount)
                 {
                     hourCounter += 1;
                     weekCounter = 0;
@@ -256,6 +272,7 @@ namespace WAT_Planner
             //Ładowanie dat i czasów
             LoadTime(text);
             LoadDates(text, year);
+            LoadWeeks(text);
 
 
             int searchLength = "tdFormList1DSheTeaGrpHTM3".Length;
@@ -272,7 +289,7 @@ namespace WAT_Planner
                 {
                     tdIndex = text.IndexOf("tdFormList1DSheTeaGrpHTM3", searchLength);
                     weekCounter++;
-                    if(weekCounter == Data.weekCount)
+                    if(weekCounter == weekCount)
                     {
                         hourCounter += 1;
                         weekCounter = 0;
@@ -318,7 +335,7 @@ namespace WAT_Planner
                 entry.timeIndex = hourCounter;
                 entry.stop = new DateTime(time.Year, time.Month, time.Day, endHour[0, hourCounter], endHour[1, hourCounter], 0);
                 weekCounter++;
-                if (weekCounter == Data.weekCount)
+                if (weekCounter == weekCount)
                 {
                     hourCounter += 1;
                     weekCounter = 0;

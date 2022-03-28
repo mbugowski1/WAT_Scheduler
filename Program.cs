@@ -24,6 +24,8 @@ namespace WAT_Planner
             Debug.WriteLine("GetSubjectFromGroup: " + config.GetSubjectFromGroup(out subjects));
             Debug.WriteLine("GetManualAdds: " + config.GetManualAdds(out manualAdds));
             Debug.WriteLine("GetManualDelete: " + config.GetManualDelete(out manualDeletes));
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            Debug.WriteLine("Weeks: " + new Page(login, password).LoadWeeks(Encoding.UTF8.GetString(Password.Load("C:/Users/Michal/Desktop/test.html"))));
         }
         static bool LoadCredentials(out string login, out string password)
         {
