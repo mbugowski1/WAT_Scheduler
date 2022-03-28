@@ -17,10 +17,32 @@ namespace WAT_Planner
         static CalendarService service;
         public readonly string calendarId;
         public readonly string group;
-        public CalendarConnection(String id, String group)
+        CalendarConnection(string id, string group)
         {
             calendarId = service.Calendars.Get(id).Execute().Id;
             this.group = group;
+        }
+        public async static Task<CalendarConnection> GetCalendars(string group)
+        {
+            return (await GetCalendars(new string[] { group }))[0];
+        }
+        public async static Task<CalendarConnection[]> GetCalendars(string[] groups)
+        {
+            List<string> nameList = new List<string>(groups);
+            CalendarList calendarsList = await service.CalendarList.List().ExecuteAsync();
+            List<CalendarConnection> calendars = new List<CalendarConnection>();
+            foreach (CalendarListEntry entry in calendarsList.Items)
+            {
+                for (int i = 0; i < nameList.Count; i++)
+                    if (entry.Summary == nameList[i])
+                    {
+                        calendars.Add(new CalendarConnection(entry.Id, entry.Summary));
+                        nameList.RemoveAt(i);
+                    }
+            }
+            for (int i = 0; i < nameList.Count; i++)
+                calendars.Add(new CalendarConnection(await Create(nameList[i]), nameList[i]));
+            return calendars.ToArray();
         }
         public async static Task Connect()
         {
@@ -53,24 +75,6 @@ namespace WAT_Planner
                 HttpClientInitializer = credential,
                 ApplicationName = "WAT Plan",
             });
-        }
-        public async static Task<CalendarConnection[]> GetCalendars(String[] names)
-        {
-            List<string> nameList = new List<string>(names);
-            CalendarList calendarsList = await service.CalendarList.List().ExecuteAsync();
-            List<CalendarConnection> calendars = new List<CalendarConnection>();
-            foreach (CalendarListEntry entry in calendarsList.Items)
-            {
-                for (int i = 0; i < nameList.Count; i++)
-                    if (entry.Summary == nameList[i])
-                    { 
-                        calendars.Add(new CalendarConnection(entry.Id, entry.Summary));
-                        nameList.RemoveAt(i);
-                    }
-            }
-            for(int i = 0; i < nameList.Count; i++)
-                calendars.Add(new CalendarConnection(await Create(nameList[i]), nameList[i]));
-            return calendars.ToArray();
         }
         IList<Event> GetEvents()
         {
