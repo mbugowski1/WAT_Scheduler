@@ -21,6 +21,7 @@ namespace WAT_Planner
 
         public Page(string login, string password)
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             Work(login, password).Wait();
         }
 
@@ -163,9 +164,9 @@ namespace WAT_Planner
             } while (pos != -1);
             return counter;
         }
-        public async Task<Schedule> LoadSchedule(string group, int year, int semester, String strona)
+        public async Task<Schedule> LoadSchedule(string group, int year, int semester, string name, String strona)
         {
-            Schedule schedule = new Schedule(group, year, semester);
+            Schedule schedule = new Schedule(group, year, semester, name);
 
             //Ładowanie dat i czasów
             LoadTime(strona);
@@ -259,9 +260,9 @@ namespace WAT_Planner
             });
             return schedule;
         }
-        public async Task<Schedule> LoadSchedule(string group, int year, int semester)
+        public async Task<Schedule> LoadSchedule(string group, int year, int semester, string name)
         {
-            Schedule schedule = new Schedule(group, year, semester);
+            Schedule schedule = new Schedule(group, year, semester, name);
 
             //Pobieranie strony z kalendarzem
             HttpResponseMessage response = await client.GetAsync($"https://s1.wcy.wat.edu.pl/ed1/logged_inc.php?sid={session}&mid=328&iid={year}{semester+3}&exv={group}");

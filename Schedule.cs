@@ -8,14 +8,14 @@ namespace WAT_Planner
 {
     class Schedule
     {
-        public readonly string name;
+        public readonly string group;
         public readonly int semester;
         public readonly int year;
         public readonly string calendarName;
         public List<ScheduleDay> days = new List<ScheduleDay>();
-        public Schedule(string name, int year, int semester, string calendarName)
+        public Schedule(string group, int year, int semester, string calendarName)
         {
-            this.name = name;
+            this.group = group;
             this.semester = semester;
             this.year = year;
             this.calendarName = calendarName;

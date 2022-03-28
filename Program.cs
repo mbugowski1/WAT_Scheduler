@@ -24,13 +24,18 @@ namespace WAT_Planner
             Debug.WriteLine("GetSubjectFromGroup: " + config.GetSubjectFromGroup(out subjects));
             Debug.WriteLine("GetManualAdds: " + config.GetManualAdds(out manualAdds));
             Debug.WriteLine("GetManualDelete: " + config.GetManualDelete(out manualDeletes));
-
             var watContent = new Page(login, password);
             var schedules = new List < Schedule > ();
-            groups.ForEach(group =>
+            var calendars = new List<CalendarConnection>();
+            watContent.LoadSchedule(groups[0].group, groups[0].year, groups[0].semester, groups[0].calendarName).Wait();
+            //Downloading contents
+            /*groups.ForEach(group =>
             {
                 schedules.Add(watContent.LoadSchedule(group.group, group.year, group.semester, group.calendarName).Result);
+                calendars.Add(CalendarConnection.GetCalendars(group.group).Result);
             });
+            //Update
+            schedules.ForEach(schedule => calendars.Where(x => x.name == schedule.calendarName).First().Update(schedule));*/
         }
         static bool LoadCredentials(out string login, out string password)
         {

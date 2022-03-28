@@ -16,17 +16,19 @@ namespace WAT_Planner
     {
         static CalendarService service;
         public readonly string calendarId;
-        public readonly string group;
+        public readonly string name;
         CalendarConnection(string id, string group)
         {
             calendarId = service.Calendars.Get(id).Execute().Id;
-            this.group = group;
+            this.name = group;
         }
         public async static Task<CalendarConnection> GetCalendars(string group)
         {
-            return (await GetCalendars(new string[] { group }))[0];
+            var groups = new List<string>();
+            groups.Add(group);
+            return (await GetCalendars(groups))[0];
         }
-        public async static Task<CalendarConnection[]> GetCalendars(string[] groups)
+        public async static Task<List<CalendarConnection>> GetCalendars(List<string> groups)
         {
             List<string> nameList = new List<string>(groups);
             CalendarList calendarsList = await service.CalendarList.List().ExecuteAsync();
@@ -42,7 +44,7 @@ namespace WAT_Planner
             }
             for (int i = 0; i < nameList.Count; i++)
                 calendars.Add(new CalendarConnection(await Create(nameList[i]), nameList[i]));
-            return calendars.ToArray();
+            return calendars;
         }
         public async static Task Connect()
         {
