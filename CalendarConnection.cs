@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Google.Apis.Auth.OAuth2.Responses;
+using System.Diagnostics;
 
 namespace WAT_Planner
 {
@@ -98,8 +99,10 @@ namespace WAT_Planner
             {
                 if (i >= events.Count)
                 {
+                    Debug.WriteLine("Insert " + sched[i].longname + " " + sched[i].start.ToString());
                     service.Events.Insert(CreateEvent(sched[i]), calendarId).Execute();
                     j++;
+                    Thread.Sleep(500);
                 }
                 else if(sched[i].start == events[j].Start.DateTime)
                 {
@@ -107,26 +110,34 @@ namespace WAT_Planner
                     Event online = events[j];
                     if ((local.Description != online.Description) || (online.Summary != local.Summary) || (online.Location != local.Location))
                     {
+                        Debug.WriteLine("Update " + sched[i].longname + " " + sched[i].start.ToString());
                         service.Events.Update(local, calendarId, online.Id).Execute();
+                        Thread.Sleep(500);
                     }
                     j++;
                 }
                 else if (sched[i].start > events[j].Start.DateTime) //data w edziekanacie jest pozniej
                 {
+                    Debug.WriteLine("Remove " + events[j].Summary + " " + events[j].Start.ToString());
                     service.Events.Delete(calendarId, events[j].Id).Execute();
                     events.RemoveAt(j);
                     i--;
+                    Thread.Sleep(500);
                     continue;
                 }
                 else //data w edziekanacie jest wczesniej
                 {
+                    Debug.WriteLine("Insert " + sched[i].longname + " " + sched[i].start.ToString());
                     service.Events.Insert(CreateEvent(sched[i]), calendarId).Execute();
+                    Thread.Sleep(500);
                     continue;
                 }
             }
             while (j < events.Count)
             {
+                Debug.WriteLine("Remove " + events[j].Summary + " " + events[j].Start.ToString());
                 service.Events.Delete(calendarId, events[j++].Id).Execute();
+                Thread.Sleep(500);
             }
         }
         Event CreateEvent(Entry inject)

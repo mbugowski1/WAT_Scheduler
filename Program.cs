@@ -27,15 +27,15 @@ namespace WAT_Planner
             var watContent = new Page(login, password);
             var schedules = new List < Schedule > ();
             var calendars = new List<CalendarConnection>();
-            watContent.LoadSchedule(groups[0].group, groups[0].year, groups[0].semester, groups[0].calendarName).Wait();
             //Downloading contents
-            /*groups.ForEach(group =>
+            CalendarConnection.Connect().Wait();
+            groups.ForEach(group =>
             {
                 schedules.Add(watContent.LoadSchedule(group.group, group.year, group.semester, group.calendarName).Result);
                 calendars.Add(CalendarConnection.GetCalendars(group.group).Result);
             });
             //Update
-            schedules.ForEach(schedule => calendars.Where(x => x.name == schedule.calendarName).First().Update(schedule));*/
+            schedules.ForEach(schedule => calendars.Where(x => x.name == schedule.calendarName).First().Update(schedule));
         }
         static bool LoadCredentials(out string login, out string password)
         {

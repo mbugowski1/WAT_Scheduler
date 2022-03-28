@@ -171,7 +171,7 @@ namespace WAT_Planner
             //Ładowanie dat i czasów
             LoadTime(strona);
             LoadDates(strona, year);
-            LoadWeeks(strona);
+            weekCount = LoadWeeks(strona);
             
 
 
@@ -265,7 +265,11 @@ namespace WAT_Planner
             Schedule schedule = new Schedule(group, year, semester, name);
 
             //Pobieranie strony z kalendarzem
-            HttpResponseMessage response = await client.GetAsync($"https://s1.wcy.wat.edu.pl/ed1/logged_inc.php?sid={session}&mid=328&iid={year}{semester+3}&exv={group}");
+            HttpResponseMessage response;
+            if (semester == 1)
+                response = await client.GetAsync($"https://s1.wcy.wat.edu.pl/ed1/logged_inc.php?sid={session}&mid=328&iid={year}{semester+3}&exv={group}");
+            else
+                response = await client.GetAsync($"https://s1.wcy.wat.edu.pl/ed1/logged_inc.php?sid={session}&mid=328&iid={year - 1}{semester + 3}&exv={group}");
             response.EnsureSuccessStatusCode();
             String text = await response.Content.ReadAsStringAsync();
             //String text = Program.strona;
@@ -273,7 +277,7 @@ namespace WAT_Planner
             //Ładowanie dat i czasów
             LoadTime(text);
             LoadDates(text, year);
-            LoadWeeks(text);
+            weekCount = LoadWeeks(text);
 
 
             int searchLength = "tdFormList1DSheTeaGrpHTM3".Length;
@@ -309,8 +313,8 @@ namespace WAT_Planner
                 int titleEnd = text.IndexOf('"', titleStart);
                 string title = text.Substring(titleStart, titleEnd - titleStart);
                 int titleDivide = title.IndexOf('-');
-                int typeStart = title.IndexOf('(');
-                int typeStop = title.IndexOf(')');
+                int typeStart = title.IndexOf('(', titleDivide);
+                int typeStop = title.IndexOf(')', typeStart);
                 entry.type = title.Substring(typeStart + 1, typeStop - typeStart - 1);
                 entry.longname = title.Substring(0, titleDivide - 1);
                 entry.leader = title.Substring(titleDivide + 2, typeStart - titleDivide - 3);
