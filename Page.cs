@@ -16,7 +16,7 @@ namespace WAT_Planner
         public int[,] endHour = new int[2, 7];
 
         public int weekCount;
-        DateTime startDate;
+        public DateTime StartDate { private set; get; }
         string session;
 
         public Page(string login, string password)
@@ -151,7 +151,7 @@ namespace WAT_Planner
                     month = 1;
                     break;
             }
-            startDate = new DateTime(year, month, day);
+            StartDate = new DateTime(year, month, day);
         }
         public int LoadWeeks(string content)
         {
@@ -230,7 +230,7 @@ namespace WAT_Planner
                 tdIndex = strona.IndexOf("tdFormList1DSheTeaGrpHTM3", searchLength);
 
                 //Obliczanie czasu wydarzenia
-                DateTime time = startDate.AddDays(weekCounter * 7 + dayCounter);
+                DateTime time = StartDate.AddDays(weekCounter * 7 + dayCounter);
                 entry.start = new DateTime(time.Year, time.Month, time.Day, startHour[0, hourCounter], startHour[1, hourCounter], 0);
                 entry.timeIndex = hourCounter;
                 entry.stop = new DateTime(time.Year, time.Month, time.Day, endHour[0, hourCounter], endHour[1, hourCounter], 0);
@@ -335,7 +335,7 @@ namespace WAT_Planner
                 tdIndex = text.IndexOf("tdFormList1DSheTeaGrpHTM3", searchLength);
 
                 //Obliczanie czasu wydarzenia
-                DateTime time = startDate.AddDays(weekCounter * 7 + dayCounter);
+                DateTime time = StartDate.AddDays(weekCounter * 7 + dayCounter);
                 entry.start = new DateTime(time.Year, time.Month, time.Day, startHour[0, hourCounter], startHour[1, hourCounter], 0);
                 entry.timeIndex = hourCounter;
                 entry.stop = new DateTime(time.Year, time.Month, time.Day, endHour[0, hourCounter], endHour[1, hourCounter], 0);

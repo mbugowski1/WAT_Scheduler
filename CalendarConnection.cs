@@ -84,7 +84,7 @@ namespace WAT_Planner
             Events events = service.Events.List(calendarId).Execute();
             return events.Items;
         }
-        public void Update(Schedule schedule)
+        public void Update(Schedule schedule, DateTime startDate)
         {
             List<Event> events = new List<Event>(GetEvents());
             events.Sort(delegate (Event a, Event b)
@@ -116,7 +116,7 @@ namespace WAT_Planner
                     }
                     j++;
                 }
-                else if (sched[i].start > events[j].Start.DateTime) //data w edziekanacie jest pozniej
+                else if (sched[i].start > events[j].Start.DateTime && events[j].Start.DateTime > startDate) //data w edziekanacie jest pozniej
                 {
                     Debug.WriteLine("Remove " + events[j].Summary + " " + events[j].Start.ToString());
                     service.Events.Delete(calendarId, events[j].Id).Execute();

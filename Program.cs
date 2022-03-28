@@ -35,7 +35,7 @@ namespace WAT_Planner
                 calendars.Add(CalendarConnection.GetCalendars(group.group).Result);
             });
             //Update
-            schedules.ForEach(schedule => calendars.Where(x => x.name == schedule.calendarName).First().Update(schedule));
+            schedules.ForEach(schedule => calendars.Where(x => x.name == schedule.calendarName).First().Update(schedule, watContent.StartDate));
         }
         static bool LoadCredentials(out string login, out string password)
         {
