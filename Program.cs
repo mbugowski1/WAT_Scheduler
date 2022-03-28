@@ -24,8 +24,13 @@ namespace WAT_Planner
             Debug.WriteLine("GetSubjectFromGroup: " + config.GetSubjectFromGroup(out subjects));
             Debug.WriteLine("GetManualAdds: " + config.GetManualAdds(out manualAdds));
             Debug.WriteLine("GetManualDelete: " + config.GetManualDelete(out manualDeletes));
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            Debug.WriteLine("Weeks: " + new Page(login, password).LoadWeeks(Encoding.UTF8.GetString(Password.Load("C:/Users/Michal/Desktop/test.html"))));
+
+            var watContent = new Page(login, password);
+            var schedules = new List < Schedule > ();
+            groups.ForEach(group =>
+            {
+                schedules.Add(watContent.LoadSchedule(group.group, group.year, group.semester, group.calendarName).Result);
+            });
         }
         static bool LoadCredentials(out string login, out string password)
         {

@@ -11,12 +11,14 @@ namespace WAT_Planner
         public readonly string name;
         public readonly int semester;
         public readonly int year;
+        public readonly string calendarName;
         public List<ScheduleDay> days = new List<ScheduleDay>();
-        public Schedule(string name, int year, int semester)
+        public Schedule(string name, int year, int semester, string calendarName)
         {
             this.name = name;
             this.semester = semester;
             this.year = year;
+            this.calendarName = calendarName;
         }
         public ScheduleDay find(DateTime date)
         {
