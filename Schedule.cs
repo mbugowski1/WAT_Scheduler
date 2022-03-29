@@ -12,13 +12,15 @@ namespace WAT_Planner
         public readonly int semester;
         public readonly int year;
         public readonly string calendarName;
+        public readonly DateTime startDate;
         public List<ScheduleDay> days = new List<ScheduleDay>();
-        public Schedule(string group, int year, int semester, string calendarName)
+        public Schedule(string group, int year, int semester, string calendarName, DateTime startDate)
         {
             this.group = group;
             this.semester = semester;
             this.year = year;
             this.calendarName = calendarName;
+            this.startDate = startDate;
         }
         public ScheduleDay find(DateTime date)
         {

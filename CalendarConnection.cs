@@ -51,7 +51,7 @@ namespace WAT_Planner
         {
             UserCredential credential;
             string[] scopes = { CalendarService.Scope.Calendar };
-
+            
             using (var stream =
                 new FileStream("credentials.json", FileMode.Open, FileAccess.Read))
             {
@@ -79,14 +79,35 @@ namespace WAT_Planner
                 ApplicationName = "WAT Plan",
             });
         }
-        IList<Event> GetEvents()
+        List<Event> GetEvents(DateTime startTime)
         {
-            Events events = service.Events.List(calendarId).Execute();
-            return events.Items;
+            var request = service.Events.List(calendarId);
+            //request.TimeMax = startTime;
+            //request.TimeMin = DateTime.Now;
+            string token = String.Empty;
+            List<Event> result = new();
+            do
+            {
+                request.PageToken = token;
+                Events events = request.Execute();
+                result.AddRange(events.Items);
+                token = events.NextPageToken;
+            } while (token != null);
+            return result;
         }
-        public void Update(Schedule schedule, DateTime startDate)
+        public void ClearCalendar()
         {
-            List<Event> events = new List<Event>(GetEvents());
+            List<Event> events = GetEvents(new DateTime(2000, 01, 01));
+            events.ForEach(e =>
+            {
+                Debug.WriteLine("Remove " + e.Summary + " at " + e.Start.DateTime);
+                service.Events.Delete(calendarId, e.Id).Execute();
+                Thread.Sleep(500);
+            });
+        }
+        public void Update(Schedule schedule)
+        {
+            List<Event> events = GetEvents(schedule.startDate);
             events.Sort(delegate (Event a, Event b)
             {
                 if (a.Start.DateTime == b.Start.DateTime) return 0;
@@ -94,51 +115,34 @@ namespace WAT_Planner
                 else return -1;
             });
             List<Entry> sched = schedule.ToOneList();
-            int j = 0;
-            for (int i = 0; i < sched.Count; i++)
+            DateTime startDate = sched[0].start;
+            sched.ForEach(e =>
             {
-                if (i >= events.Count)
+                Event online = events.Find(x => x.Start.DateTime == e.start);
+                if(online != null)
                 {
-                    Debug.WriteLine("Insert " + sched[i].longname + " " + sched[i].start.ToString());
-                    service.Events.Insert(CreateEvent(sched[i]), calendarId).Execute();
-                    j++;
-                    Thread.Sleep(500);
-                }
-                else if(sched[i].start == events[j].Start.DateTime)
-                {
-                    Event local = CreateEvent(sched[i]);
-                    Event online = events[j];
-                    if ((local.Description != online.Description) || (online.Summary != local.Summary) || (online.Location != local.Location))
+                    Event local = CreateEvent(e);
+                    if ((local.Description != online.Description) || (online.Summary != local.Summary) || (online.Location != local.Location) || (online.End.DateTime != local.End.DateTime))
                     {
-                        Debug.WriteLine("Update " + sched[i].longname + " " + sched[i].start.ToString());
+                        Debug.WriteLine("Update " + e.longname + " " + e.start.ToString());
                         service.Events.Update(local, calendarId, online.Id).Execute();
                         Thread.Sleep(500);
                     }
-                    j++;
+                    events.Remove(online);
                 }
-                else if (sched[i].start > events[j].Start.DateTime && events[j].Start.DateTime > startDate) //data w edziekanacie jest pozniej
+                else
                 {
-                    Debug.WriteLine("Remove " + events[j].Summary + " " + events[j].Start.ToString());
-                    service.Events.Delete(calendarId, events[j].Id).Execute();
-                    events.RemoveAt(j);
-                    i--;
+                    Debug.WriteLine("Insert " + e.longname + " " + e.start.ToString());
+                    service.Events.Insert(CreateEvent(e), calendarId).Execute();
                     Thread.Sleep(500);
-                    continue;
                 }
-                else //data w edziekanacie jest wczesniej
-                {
-                    Debug.WriteLine("Insert " + sched[i].longname + " " + sched[i].start.ToString());
-                    service.Events.Insert(CreateEvent(sched[i]), calendarId).Execute();
-                    Thread.Sleep(500);
-                    continue;
-                }
-            }
-            while (j < events.Count)
+            });
+            events.ForEach(e =>
             {
-                Debug.WriteLine("Remove " + events[j].Summary + " " + events[j].Start.ToString());
-                service.Events.Delete(calendarId, events[j++].Id).Execute();
+                Debug.WriteLine("Remove " + e.Summary + " at " + e.Start.DateTime);
+                service.Events.Delete(calendarId, e.Id).Execute();
                 Thread.Sleep(500);
-            }
+            });
         }
         Event CreateEvent(Entry inject)
         {

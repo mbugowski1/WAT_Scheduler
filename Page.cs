@@ -16,7 +16,6 @@ namespace WAT_Planner
         public int[,] endHour = new int[2, 7];
 
         public int weekCount;
-        public DateTime StartDate { private set; get; }
         string session;
 
         public Page(string login, string password)
@@ -100,7 +99,7 @@ namespace WAT_Planner
                 endHour[1, i] = Int32.Parse(cut.Substring(3, 2));
             }
         }
-        void LoadDates(string content, int year)
+        DateTime GetStartDate(string content, int year)
         {
             int tdIndex = content.IndexOf("thFormList1HSheTeaGrpHTM3");
             string cut = content.Substring(content.IndexOf("<nobr>", tdIndex) + 6, 8);
@@ -151,7 +150,7 @@ namespace WAT_Planner
                     month = 1;
                     break;
             }
-            StartDate = new DateTime(year, month, day);
+            return new DateTime(year, month, day);
         }
         public int LoadWeeks(string content)
         {
@@ -166,14 +165,13 @@ namespace WAT_Planner
         }
         public async Task<Schedule> LoadSchedule(string group, int year, int semester, string name, String strona)
         {
-            Schedule schedule = new Schedule(group, year, semester, name);
-
             //Ładowanie dat i czasów
             LoadTime(strona);
-            LoadDates(strona, year);
+            var startDate = GetStartDate(strona, year);
             weekCount = LoadWeeks(strona);
-            
 
+
+            Schedule schedule = new Schedule(group, year, semester, name, startDate);
 
             int searchLength = "tdFormList1DSheTeaGrpHTM3".Length;
             int tdIndex = strona.IndexOf("tdFormList1DSheTeaGrpHTM3");
@@ -230,7 +228,7 @@ namespace WAT_Planner
                 tdIndex = strona.IndexOf("tdFormList1DSheTeaGrpHTM3", searchLength);
 
                 //Obliczanie czasu wydarzenia
-                DateTime time = StartDate.AddDays(weekCounter * 7 + dayCounter);
+                DateTime time = startDate.AddDays(weekCounter * 7 + dayCounter);
                 entry.start = new DateTime(time.Year, time.Month, time.Day, startHour[0, hourCounter], startHour[1, hourCounter], 0);
                 entry.timeIndex = hourCounter;
                 entry.stop = new DateTime(time.Year, time.Month, time.Day, endHour[0, hourCounter], endHour[1, hourCounter], 0);
@@ -262,7 +260,6 @@ namespace WAT_Planner
         }
         public async Task<Schedule> LoadSchedule(string group, int year, int semester, string name)
         {
-            Schedule schedule = new Schedule(group, year, semester, name);
 
             //Pobieranie strony z kalendarzem
             HttpResponseMessage response;
@@ -276,9 +273,10 @@ namespace WAT_Planner
 
             //Ładowanie dat i czasów
             LoadTime(text);
-            LoadDates(text, year);
+            var startDate = GetStartDate(text, year);
             weekCount = LoadWeeks(text);
 
+            Schedule schedule = new Schedule(group, year, semester, name, startDate);
 
             int searchLength = "tdFormList1DSheTeaGrpHTM3".Length;
             int tdIndex = text.IndexOf("tdFormList1DSheTeaGrpHTM3");
@@ -335,7 +333,7 @@ namespace WAT_Planner
                 tdIndex = text.IndexOf("tdFormList1DSheTeaGrpHTM3", searchLength);
 
                 //Obliczanie czasu wydarzenia
-                DateTime time = StartDate.AddDays(weekCounter * 7 + dayCounter);
+                DateTime time = startDate.AddDays(weekCounter * 7 + dayCounter);
                 entry.start = new DateTime(time.Year, time.Month, time.Day, startHour[0, hourCounter], startHour[1, hourCounter], 0);
                 entry.timeIndex = hourCounter;
                 entry.stop = new DateTime(time.Year, time.Month, time.Day, endHour[0, hourCounter], endHour[1, hourCounter], 0);
