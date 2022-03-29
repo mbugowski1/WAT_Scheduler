@@ -22,7 +22,7 @@ namespace WAT_Planner
             this.calendarName = calendarName;
             this.startDate = startDate;
         }
-        public ScheduleDay find(DateTime date)
+        public ScheduleDay Find(DateTime date)
         {
             foreach(ScheduleDay singleDay in days)
             {

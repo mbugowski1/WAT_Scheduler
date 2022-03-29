@@ -29,13 +29,51 @@ namespace WAT_Planner
             var calendars = new List<CalendarConnection>();
             //Downloading contents
             CalendarConnection.Connect().Wait();
-            groups.ForEach(group =>
+            foreach (var group in groups)
             {
                 schedules.Add(watContent.LoadSchedule(group.group, group.year, group.semester, group.calendarName).Result);
+            }
+            foreach(var addon in manualAdds)
+            {
+                if (!groups.Exists(x => x.calendarName == addon.schedule))
+                    groups.Add(new Config.Group
+                    {
+                        calendarName = addon.schedule,
+                        group = addon.schedule,
+                        semester = 0,
+                        year = addon.entry.start.Year
+                    });
+            }
+            AddManualEvents(manualAdds, schedules);
+            groups.ForEach(group =>
+            {
                 calendars.Add(CalendarConnection.GetCalendars(group.group).Result);
             });
             //Update
             schedules.ForEach(schedule => calendars.Where(x => x.name == schedule.calendarName).First().Update(schedule));
+        }
+        static void AddManualEvents(List<Config.ManualAdd> events, List<Schedule> schedules)
+        {
+            foreach(var e in events)
+            {
+                var schedule = schedules.Find(x => x.calendarName == e.schedule);
+                if (schedule != null && schedule.startDate.Date > e.entry.start.Date)
+                    continue;
+                else if (schedule == null)
+                {
+                    schedule = new Schedule(e.schedule, e.entry.start.Year, 0, e.schedule, DateTime.MinValue);
+                    schedules.Add(schedule);
+                }
+                var day = schedule.days.Find(x => x.date.Date == e.entry.start.Date);
+                if(day != null)
+                    day.events.Add(e.entry);
+                else
+                {
+                    var insertDay = new ScheduleDay(e.entry.start.Date);
+                    insertDay.events.Add(e.entry);
+                    schedule.days.Add(insertDay);
+                }
+            };
         }
         static bool LoadCredentials(out string login, out string password)
         {

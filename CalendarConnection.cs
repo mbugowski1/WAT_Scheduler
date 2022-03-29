@@ -165,6 +165,7 @@ namespace WAT_Planner
         {
             Calendar calendar = new Calendar();
             calendar.Summary = name;
+            Debug.WriteLine("New Calendar: " + name);
             calendar = await service.Calendars.Insert(calendar).ExecuteAsync();
             return calendar.Id;
         }
