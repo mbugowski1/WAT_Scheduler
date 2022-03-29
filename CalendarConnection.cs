@@ -82,8 +82,8 @@ namespace WAT_Planner
         List<Event> GetEvents(DateTime startTime)
         {
             var request = service.Events.List(calendarId);
-            //request.TimeMax = startTime;
-            //request.TimeMin = DateTime.Now;
+            //request.TimeMax = startTime
+            request.TimeMin = startTime;
             string token = String.Empty;
             List<Event> result = new();
             do
@@ -97,7 +97,7 @@ namespace WAT_Planner
         }
         public void ClearCalendar()
         {
-            List<Event> events = GetEvents(new DateTime(2000, 01, 01));
+            List<Event> events = GetEvents(DateTime.MinValue);
             events.ForEach(e =>
             {
                 Debug.WriteLine("Remove " + e.Summary + " at " + e.Start.DateTime);
