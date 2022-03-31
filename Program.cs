@@ -20,10 +20,14 @@ namespace WAT_Planner
             List<Config.ManualDelete> manualDeletes;
 
             if (!LoadCredentials(out login, out password)) return;
-            Debug.WriteLine("Groups: " + config.GetGroups(out groups));
-            Debug.WriteLine("GetSubjectFromGroup: " + config.GetSubjectFromGroup(out subjects));
-            Debug.WriteLine("GetManualAdds: " + config.GetManualAdds(out manualAdds));
-            Debug.WriteLine("GetManualDelete: " + config.GetManualDelete(out manualDeletes));
+            var groupsEnabled = config.GetGroups(out groups);
+            var subjectsEnabled = config.GetSubjectFromGroup(out subjects);
+            var manualAddsEnabled = config.GetManualAdds(out manualAdds);
+            var manualDeletesEnabled = config.GetManualDelete(out manualDeletes);
+            Debug.WriteLine("Groups: " + groupsEnabled);
+            Debug.WriteLine("GetSubjectFromGroup: " + subjectsEnabled);
+            Debug.WriteLine("GetManualAdds: " + manualAddsEnabled);
+            Debug.WriteLine("GetManualDelete: " + manualDeletesEnabled);
             var watContent = new Page(login, password);
             var schedules = new List<Schedule>();
             var tempSchedules = new List<Schedule>();
@@ -31,25 +35,49 @@ namespace WAT_Planner
             //Downloading contents
             CalendarConnection.Connect().Wait();
             Config.Group grupa = new Config.SubjectFromGroup();
-            foreach (var group in groups)
+            if(groupsEnabled)
             {
-                schedules.Add(watContent.LoadSchedule(group.group, group.year, group.semester, group.calendarName).Result);
+                foreach (var group in groups)
+                {
+                    schedules.Add(watContent.LoadSchedule(group.group, group.year, group.semester, group.calendarName).Result);
+                }
             }
-            subjects.Where(s => !groups.Exists(g => g.group == s.group)).ToList()
-                .ForEach(s => tempSchedules.Add(watContent.LoadSchedule(s.group, s.year, s.semester, s.group).Result));
-            foreach(var addon in manualAdds)
+            if(subjectsEnabled)
+                subjects.Where(s => !groups.Exists(g => g.group == s.group)).ToList()
+                    .ForEach(s => tempSchedules.Add(watContent.LoadSchedule(s.group, s.year, s.semester, s.group).Result));
+            if (manualAddsEnabled)
             {
-                if (!groups.Exists(x => x.calendarName == addon.schedule))
-                    groups.Add(new Config.Group
-                    {
-                        calendarName = addon.schedule,
-                        group = addon.schedule,
-                        semester = 0,
-                        year = addon.entry.start.Year
-                    });
+                foreach (var addon in manualAdds)
+                {
+                    if (!schedules.Exists(x => x.calendarName == addon.schedule))
+                        groups.Add(new Config.Group
+                        {
+                            calendarName = addon.schedule,
+                            group = addon.schedule,
+                            semester = 0,
+                            year = addon.entry.start.Year
+                        });
+                }
             }
-            RemoveEvents(manualDeletes, schedules);
-            AddManualEvents(manualAdds, schedules);
+            if(manualDeletesEnabled)
+                RemoveEvents(manualDeletes, schedules);
+            if(manualAddsEnabled)
+                AddManualEvents(manualAdds, schedules);
+            if (subjectsEnabled)
+            {
+                foreach (var s in subjects)
+                {
+                    var source = schedules.Find(x => x.group == s.group);
+                    if (source == null)
+                        source = tempSchedules.Find(x => x.group == s.group);
+                    var destination = schedules.Find(x => x.calendarName == s.calendarName);
+                    var export = source.ExportSubject(s);
+                    if (destination == null)
+                        schedules.Add(export);
+                    else
+                        destination.Merge(export);
+                }
+            }
             schedules.ForEach(schedule =>
             {
                 calendars.Add(CalendarConnection.GetCalendars(schedule.calendarName).Result);

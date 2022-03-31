@@ -46,8 +46,7 @@ namespace WAT_Planner
             foreach(var day in days)
             {
                 ScheduleDay newDay = null;
-                foreach(var entry in day.events.Where(e => e.leader == subject.leader &&
-                        e.type == subject.type && e.shortname == subject.shortname))
+                foreach(var entry in day.events.Where(e => e.type == subject.type && e.shortname == subject.shortname))
                 {
                     if (newDay == null)
                     {

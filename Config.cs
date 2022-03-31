@@ -38,11 +38,10 @@ namespace WAT_Planner
         public class SubjectFromGroup : Group
         {
             public string shortname;
-            public string leader;
             public string type;
             public override string ToString()
             {
-                return $"SubjectFromGroup {{\n\tshortname={shortname}\n\tleader={leader}\n\ttype={type}\n\tyear={year}\n\tsemester={semester}\n\t" +
+                return $"SubjectFromGroup {{\n\tshortname={shortname}\n\ttype={type}\n\tyear={year}\n\tsemester={semester}\n\t" +
                     $"group={group}\n\tscheduleTo={calendarName}\n}}";
             }
         }
@@ -279,7 +278,6 @@ namespace WAT_Planner
             string[] tags =
             {
                 "short_name",
-                "leader",
                 "type",
                 "scheduleFrom",
                 "scheduleTo"
@@ -301,7 +299,6 @@ namespace WAT_Planner
                 SubjectFromGroup subject = new SubjectFromGroup
                 {
                     shortname = set["short_name"],
-                    leader = set["leader"],
                     type = set["type"],
                     group = set["scheduleFrom"],
                     calendarName = set["scheduleTo"],
