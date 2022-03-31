@@ -42,7 +42,7 @@ namespace WAT_Planner
         }
         public Schedule ExportSubject(Config.SubjectFromGroup subject)
         {
-            var result = new Schedule(subject.calendarName, year, semester, calendarName, StartDate);
+            var result = new Schedule(subject.group, year, semester, subject.calendarName, StartDate);
             foreach(var day in days)
             {
                 ScheduleDay newDay = null;
