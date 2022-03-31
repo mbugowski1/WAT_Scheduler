@@ -243,7 +243,12 @@ namespace WAT_Planner
                     dayCounter += 1;
                     hourCounter = 0;
                 }
-                ScheduleDay day = schedule.Find(time.Date);
+                ScheduleDay day = schedule.FindDay(time.Date);
+                if(day == null)
+                {
+                    day = new ScheduleDay(time.Date);
+                    schedule.days.Add(day);
+                }
                 day.events.Add(entry);
             }
             foreach (var day in schedule.days)
@@ -348,7 +353,12 @@ namespace WAT_Planner
                     dayCounter += 1;
                     hourCounter = 0;
                 }
-                ScheduleDay day = schedule.Find(time.Date);
+                ScheduleDay day = schedule.FindDay(time.Date);
+                if(day == null)
+                {
+                    day = new ScheduleDay(time.Date);
+                    schedule.days.Add(day);
+                }
                 day.events.Add(entry);
             }
             foreach(var day in schedule.days)

@@ -45,6 +45,7 @@ namespace WAT_Planner
                     });
             }
             AddManualEvents(manualAdds, schedules);
+            RemoveEvents(manualDeletes, schedules);
             groups.ForEach(group =>
             {
                 calendars.Add(CalendarConnection.GetCalendars(group.group).Result);
@@ -74,6 +75,19 @@ namespace WAT_Planner
                     schedule.days.Add(insertDay);
                 }
             };
+        }
+        static void RemoveEvents(List<Config.ManualDelete> events, List<Schedule> schedules)
+        {
+            foreach(var e in events)
+            {
+                var schedule = schedules.Find(x => x.calendarName == e.schedule);
+                if (schedule == null) continue;
+                var day = schedule.days.Find(x => x.date.Date == e.start.Date);
+                if(day == null) continue;
+                var removal = day.events.Find(x => x.start == e.start);
+                if(removal == null) continue;
+                day.events.Remove(removal);
+            }
         }
         static bool LoadCredentials(out string login, out string password)
         {

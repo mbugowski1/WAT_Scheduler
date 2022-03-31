@@ -22,16 +22,14 @@ namespace WAT_Planner
             this.calendarName = calendarName;
             this.startDate = startDate;
         }
-        public ScheduleDay Find(DateTime date)
+        public ScheduleDay FindDay(DateTime date)
         {
             foreach(ScheduleDay singleDay in days)
             {
                 if (singleDay.date == date)
                     return singleDay;
             }
-            ScheduleDay created = new ScheduleDay(date);
-            days.Add(created);
-            return created;
+            return null;
         }
         public List<Entry> ToOneList()
         {
