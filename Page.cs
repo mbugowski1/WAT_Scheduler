@@ -268,10 +268,12 @@ namespace WAT_Planner
 
             //Pobieranie strony z kalendarzem
             HttpResponseMessage response;
+            string link;
             if (semester == 1)
-                response = await client.GetAsync($"https://s1.wcy.wat.edu.pl/ed1/logged_inc.php?sid={session}&mid=328&iid={year}{semester+3}&exv={group}");
+                link = $"https://s1.wcy.wat.edu.pl/ed1/logged_inc.php?sid={session}&mid=328&iid={year}{semester + 3}&exv={group}";
             else
-                response = await client.GetAsync($"https://s1.wcy.wat.edu.pl/ed1/logged_inc.php?sid={session}&mid=328&iid={year - 1}{semester + 3}&exv={group}");
+                link = $"https://s1.wcy.wat.edu.pl/ed1/logged_inc.php?sid={session}&mid=328&iid={year - 1}{semester + 3}&exv={group}";
+            response = await client.GetAsync(link);
             response.EnsureSuccessStatusCode();
             String text = await response.Content.ReadAsStringAsync();
             //String text = Program.strona;
