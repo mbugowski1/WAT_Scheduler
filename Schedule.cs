@@ -8,26 +8,28 @@ namespace WAT_Planner
 {
     class Schedule
     {
-        public readonly string name;
+        public readonly string group;
         public readonly int semester;
         public readonly int year;
+        public readonly string calendarName;
+        public DateTime StartDate { get; private set; }
         public List<ScheduleDay> days = new List<ScheduleDay>();
-        public Schedule(string name, int year, int semester)
+        public Schedule(string group, int year, int semester, string calendarName, DateTime startDate)
         {
-            this.name = name;
+            this.group = group;
             this.semester = semester;
             this.year = year;
+            this.calendarName = calendarName;
+            this.StartDate = startDate;
         }
-        public ScheduleDay find(DateTime date)
+        public ScheduleDay FindDay(DateTime date)
         {
             foreach(ScheduleDay singleDay in days)
             {
                 if (singleDay.date == date)
                     return singleDay;
             }
-            ScheduleDay created = new ScheduleDay(date);
-            days.Add(created);
-            return created;
+            return null;
         }
         public List<Entry> ToOneList()
         {
@@ -37,6 +39,44 @@ namespace WAT_Planner
                 list.AddRange(day.events);
             }
             return list;
+        }
+        public Schedule ExportSubject(Config.SubjectFromGroup subject)
+        {
+            var result = new Schedule(subject.group, year, semester, subject.calendarName, StartDate);
+            foreach(var day in days)
+            {
+                ScheduleDay newDay = null;
+                foreach(var entry in day.events.Where(e => e.type == subject.type && e.shortname == subject.shortname))
+                {
+                    if (newDay == null)
+                    {
+                        newDay = new ScheduleDay(day.date);
+                        result.days.Add(newDay);
+                    }
+                    newDay.events.Add(entry);
+                }
+            }
+            return result;
+        }
+        public void Merge(Schedule other)
+        {
+            if(StartDate > other.StartDate) StartDate = other.StartDate;
+            foreach(var day in other.days)
+            {
+                var commonDay = days.Find(x => x.date.Date == day.date.Date);
+                if(commonDay == null) days.Add(day);
+                else
+                {
+                    foreach(var e in day.events)
+                    {
+                        if (!commonDay.events.Exists(x => x.timeIndex == e.timeIndex && x.type == e.type &&
+                             x.longname == e.longname && x.leader == e.leader))
+                        {
+                            commonDay.events.Add(e);
+                        }
+                    }
+                }
+            }
         }
         public string ToString(int day, int month, int year)
         {

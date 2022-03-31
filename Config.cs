@@ -8,6 +8,53 @@ namespace WAT_Planner
 {
     class Config
     {
+        public static readonly string loginTag = "Login";
+        static readonly string groupsTag = "Groups";
+        static readonly string subjectsTag = "SubjectFromGroup";
+        static readonly string addsTag = "ManualAdd";
+        static readonly string deletesTag = "ManualDelete";
+
+
+        public class Group
+        {
+            public string group;
+            public int year;
+            public int semester;
+            public string calendarName;
+            public override string ToString()
+            {
+                return $"Group {{\n\tgroup={group}\n\tyear={year}\n\tsemester={semester}\n\tcalendarName={calendarName}\n}}";
+            }
+        }
+        public class ManualAdd
+        {
+            public Entry entry;
+            public string schedule;
+            public override string ToString()
+            {
+                return $"ManualAdd {{\n\tentry={entry}\n\tschedule={schedule}\n}}";
+            }
+        }
+        public class SubjectFromGroup : Group
+        {
+            public string shortname;
+            public string type;
+            public override string ToString()
+            {
+                return $"SubjectFromGroup {{\n\tshortname={shortname}\n\ttype={type}\n\tyear={year}\n\tsemester={semester}\n\t" +
+                    $"group={group}\n\tscheduleTo={calendarName}\n}}";
+            }
+        }
+        public class ManualDelete
+        {
+            public DateTime start;
+            public string schedule;
+            public override string ToString()
+            {
+                return $"ManualDelete {{\n\tstart={start}\n\tschedule={schedule}\n}}";
+            }
+        }
+
         private class Setting
         {
             public bool IsDictionary { private set; get; }
@@ -31,7 +78,7 @@ namespace WAT_Planner
             "ManualAdd",
             "ManualDelete"
         };
-        Dictionary<string, Setting[]> settings = new Dictionary<string, Setting[]>();
+        Dictionary<string, List<Setting>> settings = new Dictionary<string, List<Setting>>();
         public Config(in string file)
         {
             if (!File.Exists(file))
@@ -62,7 +109,7 @@ namespace WAT_Planner
                 {
                     string[] seperated = line.Split('=', 2);
                     if (settings.ContainsKey(seperated[0])) return;
-                    Setting[] sets;
+                    List<Setting> sets = new List<Setting>();
                     if (seperated[1].Contains('{') && seperated[1].Contains('}'))
                     {
                         int stop = 0;
@@ -72,18 +119,18 @@ namespace WAT_Planner
                             int start = seperated[1].IndexOf('{', stop) + 1;
                             stop = seperated[1].IndexOf('}', start);
                             string textToEdit = seperated[1].Substring(start, stop - start);
-                            pairs.Add(GetDictionary(textToEdit));
+                            pairs.Add(CreateDictionary(textToEdit));
                         }
-                        sets = new Setting[pairs.Count];
-                        for (int i = 0; i < sets.Length; i++)
-                            sets[i] = new Setting(pairs[i], true);
+                        pairs.ForEach(x =>
+                        {
+                            sets.Add(new Setting(x, true));
+                        });
                     }
                     else
                     {
                         string[] values = seperated[1].Split(',');
-                        sets = new Setting[values.Length];
                         for (int i = 0; i < values.Length; i++)
-                            sets[i] = new Setting(values[i], false);
+                            sets.Add(new Setting(values[i], false));
                     }
                     settings.Add(seperated[0], sets);
                 }
@@ -123,18 +170,18 @@ namespace WAT_Planner
             }
             return modifier.ToString();
         }
-        DateTime GetDate(string date)
+        DateTime CreateDate(string date)
         {
             string[] dateStrings = date.Split('-', 3);
             return new DateTime(Int32.Parse(dateStrings[0]), Int32.Parse(dateStrings[1]), Int32.Parse(dateStrings[2]));
         }
-        DateTime GetTime(DateTime date, string time)
+        DateTime CreateTime(DateTime date, string time)
         {
             string[] timeStrings = time.Split(':', 2);
             DateTime result = new DateTime(date.Year, date.Month, date.Day, Int32.Parse(timeStrings[0]), Int32.Parse(timeStrings[1]), 0);
             return result;
         }
-        Dictionary<string, string> GetDictionary(string text)
+        Dictionary<string, string> CreateDictionary(string text)
         {
             string[] options = text.Split(',');
             Dictionary<string, string> result = new Dictionary<string, string>();
@@ -146,79 +193,224 @@ namespace WAT_Planner
             }
             return result;
         }
-        public bool GetDictionary(string setting, out Dictionary<string, string>[] result)
+        public bool GetDictionary(string setting, out List<Dictionary<string, string>> result)
         {
-            if (!settings.TryGetValue(setting, out Setting[] sets))
+            if (!settings.TryGetValue(setting, out List<Setting> sets))
             {
                 result = null;
                 return false;
             }
-            result = new Dictionary<string, string>[sets.Length];
-            for (int i = 0; i < sets.Length; i++)
+            if(sets.Exists(x => x.IsDictionary == false))
             {
-                if (sets[i].IsDictionary == false)
-                    throw new ArgumentException("Tried to read from non brackets setting");
-                result[i] = (Dictionary<string, string>)sets[i].Value;
+                //log
+                result = null;
+                return false;
+            }
+            result = new();
+            foreach(Setting x in sets)
+            {
+                result.Add((Dictionary<string, string>)x.Value);
             }
             return true;
         }
-        public bool GetEntry(string setting, out Entry[] result, out string schedule)
+        public bool GetManualAdds(out List<ManualAdd> result)
         {
-            schedule = null;
-            if (!settings.TryGetValue(setting, out Setting[] sets))
+            if (!GetDictionary(addsTag, out List<Dictionary<string, string>> sets))
             {
                 result = null;
                 return false;
             }
-            foreach (Setting set in sets)
-                if (set.IsDictionary == false)
-                    throw new ArgumentException("Tried to read from non brackets setting");
-            result = new Entry[sets.Length];
-            for (int i = 0; i < sets.Length; i++)
+            string[] tags =
             {
-                Dictionary<string, string> pairs = (Dictionary<string, string>)sets[i].Value;
-                schedule = null;
-                string dateText = String.Empty, startTime = String.Empty, stopTime = String.Empty;
-                result[i] = new Entry();
-                bool done;
-                if (done = pairs.TryGetValue("short_name", out result[i].shortname))
-                    if (done = pairs.TryGetValue("long_name", out result[i].longname))
-                        if (done = pairs.TryGetValue("leader", out result[i].leader))
-                            if (done = pairs.TryGetValue("type", out result[i].type))
-                                if (done = pairs.TryGetValue("date", out dateText))
-                                    if (done = pairs.TryGetValue("start_time", out startTime))
-                                        if (done = pairs.TryGetValue("stop_time", out stopTime))
-                                            done = pairs.TryGetValue("schedule", out schedule);
-                if (done)
+                "short_name",
+                "long_name",
+                "leader",
+                "type",
+                "date",
+                "start_time",
+                "stop_time",
+                "schedule"
+            };
+            foreach (string tag in tags)
+            {
+                foreach (var set in sets)
                 {
-                    DateTime date = GetDate(dateText);
-                    result[i].start = GetTime(date, startTime);
-                    result[i].stop = GetTime(date, stopTime);
-                    result[i].shortType = result[i].type.Substring(0, 1);
+                    if (!set.ContainsKey(tag))
+                    {
+                        result = null;
+                        return false;
+                    }
                 }
-                else
-                    throw new ArgumentException("Error in config file or its not and Entry");
+            }
+
+            result = new();
+            foreach (var set in sets)
+            {
+                ManualAdd newer = new ManualAdd
+                {
+                    entry = new(),
+                    schedule = null
+                };
+                newer.entry.shortname = set["short_name"];
+                newer.entry.longname = set["long_name"];
+                newer.entry.leader = set["leader"];
+                newer.entry.type = set["type"];
+                string dateText = set["date"];
+                string startTime = set["start_time"];
+                string stopTime = set["stop_time"];
+                newer.schedule = set["schedule"];
+
+                DateTime date = CreateDate(dateText);
+                newer.entry.start = CreateTime(date, startTime);
+                newer.entry.stop = CreateTime(date, stopTime);
+                newer.entry.shortType = newer.entry.type.Substring(0, 1);
+                result.Add(newer);
             }
             return true;
         }
-        public bool GetString(string setting, out string[] result)
+        public bool GetSubjectFromGroup(out List<SubjectFromGroup> result)
         {
-            if (!settings.TryGetValue(setting, out Setting[] sets))
+            if (!GetDictionary(subjectsTag, out List<Dictionary<string, string>> sets))
             {
                 result = null;
                 return false;
             }
-            foreach (Setting set in sets)
-                if (set.IsDictionary == true)
-                    throw new ArgumentException("Tried to read from brackets setting");
-            result = new string[sets.Length];
-            for (int i = 0; i < sets.Length; i++)
-                result[i] = (string)sets[i].Value;
+            string[] tags =
+            {
+                "short_name",
+                "type",
+                "scheduleFrom",
+                "scheduleTo"
+            };
+            foreach (string tag in tags)
+            {
+                foreach (var set in sets)
+                {
+                    if (!set.ContainsKey(tag))
+                    {
+                        result = null;
+                        return false;
+                    }
+                }
+            }
+            result = new();
+            foreach (var set in sets)
+            {
+                SubjectFromGroup subject = new SubjectFromGroup
+                {
+                    shortname = set["short_name"],
+                    type = set["type"],
+                    group = set["scheduleFrom"],
+                    calendarName = set["scheduleTo"],
+                };
+                if(!Int32.TryParse(set["year"], out subject.year) || !Int32.TryParse(set["semester"], out subject.semester))
+                {
+                    //log
+                    result = null;
+                    return false;
+                }
+                result.Add(subject);
+            }
+            return true;
+        }
+        public bool GetGroups(out List<Group> result)
+        {
+            if (!GetDictionary(groupsTag, out List<Dictionary<string, string>> sets))
+            {
+                result = null;
+                return false;
+            }
+            string[] tags =
+            {
+                "groupName",
+                "year",
+                "semester",
+                "calendarName"
+            };
+            foreach (string tag in tags)
+            {
+                foreach (var set in sets)
+                {
+                    if (!set.ContainsKey(tag))
+                    {
+                        result = null;
+                        return false;
+                    }
+                }
+            }
+            result = new();
+            foreach(var set in sets)
+            {
+                Group group = new Group
+                {
+                    group = set["groupName"],
+                    calendarName = set["calendarName"]
+                };
+                if(!Int32.TryParse(set["year"], out group.year) || !Int32.TryParse(set["semester"], out group.semester))
+                {
+                    //log
+                    result = null;
+                    return false;
+                }
+                result.Add(group);
+            }
+            return true;
+        }
+        public bool GetManualDelete(out List<ManualDelete> result)
+        {
+            if (!GetDictionary(deletesTag, out List<Dictionary<string, string>> sets))
+            {
+                result = null;
+                return false;
+            }
+            string[] tags =
+            {
+                "date",
+                "start_time",
+                "schedule"
+            };
+            foreach (string tag in tags)
+            {
+                foreach (var set in sets)
+                {
+                    if (!set.ContainsKey(tag))
+                    {
+                        result = null;
+                        return false;
+                    }
+                }
+            }
+            result = new();
+            foreach (var set in sets)
+            {
+                ManualDelete group = new ManualDelete
+                {
+                    start = CreateTime(CreateDate(set["date"]), set["start_time"]),
+                    schedule = set["schedule"]
+                };
+                result.Add(group);
+            }
+            return true;
+        }
+        public bool GetString(string setting, out List<string> result)
+        {
+            if (!settings.TryGetValue(setting, out List<Setting> sets))
+            {
+                result = null;
+                return false;
+            }
+            if(sets.Exists(x => x.IsDictionary == true))
+                throw new ArgumentException("Tried to read from brackets setting");
+            result = new();
+            foreach (var set in sets)
+            {
+                result.Add((string)set.Value);
+            }
             return true;
         }
         public bool GetFirstString(string setting, out string result)
         {
-            bool notFaulty = GetString(setting, out string[] array);
+            bool notFaulty = GetString(setting, out List<string> array);
             result = array[0];
             return notFaulty;
         }
@@ -239,7 +431,7 @@ namespace WAT_Planner
         public override string ToString()
         {
             string result = String.Empty;
-            foreach (KeyValuePair<string, Setting[]> setting in settings)
+            foreach (KeyValuePair<string, List<Setting>> setting in settings)
             {
                 result += setting.Key + " = ";
                 bool first = true;

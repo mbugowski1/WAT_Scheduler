@@ -4,6 +4,7 @@ using System.Threading;
 using System.Net.Http;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace WAT_Planner
 {
@@ -13,11 +14,13 @@ namespace WAT_Planner
         readonly HttpClient client = new HttpClient();
         public int[,] startHour = new int[2, 7];
         public int[,] endHour = new int[2, 7];
-        DateTime startDate;
+
+        public int weekCount;
         string session;
 
         public Page(string login, string password)
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             Work(login, password).Wait();
         }
 
@@ -96,7 +99,7 @@ namespace WAT_Planner
                 endHour[1, i] = Int32.Parse(cut.Substring(3, 2));
             }
         }
-        void LoadDates(string content, int year)
+        DateTime GetStartDate(string content, int year)
         {
             int tdIndex = content.IndexOf("thFormList1HSheTeaGrpHTM3");
             string cut = content.Substring(content.IndexOf("<nobr>", tdIndex) + 6, 8);
@@ -147,16 +150,28 @@ namespace WAT_Planner
                     month = 1;
                     break;
             }
-            startDate = new DateTime(year, month, day);
+            return new DateTime(year, month, day);
         }
-        public async Task<Schedule> LoadSchedule(string group, int year, int semester, String strona)
+        public int LoadWeeks(string content)
         {
-            Schedule schedule = new Schedule(group, year, semester);
-
+            int counter = -1;
+            int pos = -1;
+            do
+            {
+                pos = content.IndexOf("thFormList1HSheTeaGrpHTM3", pos + 1);
+                counter++;
+            } while (pos != -1);
+            return counter;
+        }
+        public async Task<Schedule> LoadSchedule(string group, int year, int semester, string name, String strona)
+        {
             //Ładowanie dat i czasów
             LoadTime(strona);
-            LoadDates(strona, year);
+            var startDate = GetStartDate(strona, year);
+            weekCount = LoadWeeks(strona);
 
+
+            Schedule schedule = new Schedule(group, year, semester, name, startDate);
 
             int searchLength = "tdFormList1DSheTeaGrpHTM3".Length;
             int tdIndex = strona.IndexOf("tdFormList1DSheTeaGrpHTM3");
@@ -172,7 +187,7 @@ namespace WAT_Planner
                 {
                     tdIndex = strona.IndexOf("tdFormList1DSheTeaGrpHTM3", searchLength);
                     weekCounter++;
-                    if (weekCounter == Data.weekCount)
+                    if (weekCounter == weekCount)
                     {
                         hourCounter += 1;
                         weekCounter = 0;
@@ -218,7 +233,7 @@ namespace WAT_Planner
                 entry.timeIndex = hourCounter;
                 entry.stop = new DateTime(time.Year, time.Month, time.Day, endHour[0, hourCounter], endHour[1, hourCounter], 0);
                 weekCounter++;
-                if (weekCounter == Data.weekCount)
+                if (weekCounter == weekCount)
                 {
                     hourCounter += 1;
                     weekCounter = 0;
@@ -228,7 +243,12 @@ namespace WAT_Planner
                     dayCounter += 1;
                     hourCounter = 0;
                 }
-                ScheduleDay day = schedule.find(time.Date);
+                ScheduleDay day = schedule.FindDay(time.Date);
+                if(day == null)
+                {
+                    day = new ScheduleDay(time.Date);
+                    schedule.days.Add(day);
+                }
                 day.events.Add(entry);
             }
             foreach (var day in schedule.days)
@@ -243,20 +263,25 @@ namespace WAT_Planner
             });
             return schedule;
         }
-        public async Task<Schedule> LoadSchedule(string group, int year, int semester)
+        public async Task<Schedule> LoadSchedule(string group, int year, int semester, string name)
         {
-            Schedule schedule = new Schedule(group, year, semester);
 
             //Pobieranie strony z kalendarzem
-            HttpResponseMessage response = await client.GetAsync($"https://s1.wcy.wat.edu.pl/ed1/logged_inc.php?sid={session}&mid=328&iid={year}{semester+3}&exv={group}");
+            HttpResponseMessage response;
+            if (semester == 1)
+                response = await client.GetAsync($"https://s1.wcy.wat.edu.pl/ed1/logged_inc.php?sid={session}&mid=328&iid={year}{semester+3}&exv={group}");
+            else
+                response = await client.GetAsync($"https://s1.wcy.wat.edu.pl/ed1/logged_inc.php?sid={session}&mid=328&iid={year - 1}{semester + 3}&exv={group}");
             response.EnsureSuccessStatusCode();
             String text = await response.Content.ReadAsStringAsync();
             //String text = Program.strona;
 
             //Ładowanie dat i czasów
             LoadTime(text);
-            LoadDates(text, year);
+            var startDate = GetStartDate(text, year);
+            weekCount = LoadWeeks(text);
 
+            Schedule schedule = new Schedule(group, year, semester, name, startDate);
 
             int searchLength = "tdFormList1DSheTeaGrpHTM3".Length;
             int tdIndex = text.IndexOf("tdFormList1DSheTeaGrpHTM3");
@@ -272,7 +297,7 @@ namespace WAT_Planner
                 {
                     tdIndex = text.IndexOf("tdFormList1DSheTeaGrpHTM3", searchLength);
                     weekCounter++;
-                    if(weekCounter == Data.weekCount)
+                    if(weekCounter == weekCount)
                     {
                         hourCounter += 1;
                         weekCounter = 0;
@@ -291,8 +316,8 @@ namespace WAT_Planner
                 int titleEnd = text.IndexOf('"', titleStart);
                 string title = text.Substring(titleStart, titleEnd - titleStart);
                 int titleDivide = title.IndexOf('-');
-                int typeStart = title.IndexOf('(');
-                int typeStop = title.IndexOf(')');
+                int typeStart = title.IndexOf('(', titleDivide);
+                int typeStop = title.IndexOf(')', typeStart);
                 entry.type = title.Substring(typeStart + 1, typeStop - typeStart - 1);
                 entry.longname = title.Substring(0, titleDivide - 1);
                 entry.leader = title.Substring(titleDivide + 2, typeStart - titleDivide - 3);
@@ -318,7 +343,7 @@ namespace WAT_Planner
                 entry.timeIndex = hourCounter;
                 entry.stop = new DateTime(time.Year, time.Month, time.Day, endHour[0, hourCounter], endHour[1, hourCounter], 0);
                 weekCounter++;
-                if (weekCounter == Data.weekCount)
+                if (weekCounter == weekCount)
                 {
                     hourCounter += 1;
                     weekCounter = 0;
@@ -328,7 +353,12 @@ namespace WAT_Planner
                     dayCounter += 1;
                     hourCounter = 0;
                 }
-                ScheduleDay day = schedule.find(time.Date);
+                ScheduleDay day = schedule.FindDay(time.Date);
+                if(day == null)
+                {
+                    day = new ScheduleDay(time.Date);
+                    schedule.days.Add(day);
+                }
                 day.events.Add(entry);
             }
             foreach(var day in schedule.days)
