@@ -25,14 +25,18 @@ namespace WAT_Planner
             Debug.WriteLine("GetManualAdds: " + config.GetManualAdds(out manualAdds));
             Debug.WriteLine("GetManualDelete: " + config.GetManualDelete(out manualDeletes));
             var watContent = new Page(login, password);
-            var schedules = new List < Schedule > ();
+            var schedules = new List<Schedule>();
+            var tempSchedules = new List<Schedule>();
             var calendars = new List<CalendarConnection>();
             //Downloading contents
             CalendarConnection.Connect().Wait();
+            Config.Group grupa = new Config.SubjectFromGroup();
             foreach (var group in groups)
             {
                 schedules.Add(watContent.LoadSchedule(group.group, group.year, group.semester, group.calendarName).Result);
             }
+            subjects.Where(s => !groups.Exists(g => g.group == s.group)).ToList()
+                .ForEach(s => tempSchedules.Add(watContent.LoadSchedule(s.group, s.year, s.semester, s.group).Result));
             foreach(var addon in manualAdds)
             {
                 if (!groups.Exists(x => x.calendarName == addon.schedule))
@@ -44,11 +48,11 @@ namespace WAT_Planner
                         year = addon.entry.start.Year
                     });
             }
-            AddManualEvents(manualAdds, schedules);
             RemoveEvents(manualDeletes, schedules);
-            groups.ForEach(group =>
+            AddManualEvents(manualAdds, schedules);
+            schedules.ForEach(schedule =>
             {
-                calendars.Add(CalendarConnection.GetCalendars(group.group).Result);
+                calendars.Add(CalendarConnection.GetCalendars(schedule.calendarName).Result);
             });
             //Update
             schedules.ForEach(schedule => calendars.Where(x => x.name == schedule.calendarName).First().Update(schedule));
@@ -58,7 +62,7 @@ namespace WAT_Planner
             foreach(var e in events)
             {
                 var schedule = schedules.Find(x => x.calendarName == e.schedule);
-                if (schedule != null && schedule.startDate.Date > e.entry.start.Date)
+                if (schedule != null && schedule.StartDate.Date > e.entry.start.Date)
                     continue;
                 else if (schedule == null)
                 {
@@ -92,7 +96,7 @@ namespace WAT_Planner
         static bool LoadCredentials(out string login, out string password)
         {
             bool done;
-            if (done = config.GetFirstString("Login", out login))
+            if (done = config.GetFirstString(Config.loginTag, out login))
             {
                 //Obsługa wyjątku z brakiem hasła
                 byte[] encryptedPassword = Password.Load(Data.PasswordPath);

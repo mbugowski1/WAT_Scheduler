@@ -8,47 +8,14 @@ namespace WAT_Planner
 {
     class Config
     {
-        static readonly string loginTag = "Login";
+        public static readonly string loginTag = "Login";
         static readonly string groupsTag = "Groups";
         static readonly string subjectsTag = "SubjectFromGroup";
         static readonly string addsTag = "ManualAdd";
         static readonly string deletesTag = "ManualDelete";
 
 
-        public struct ManualAdd
-        {
-            public Entry entry;
-            public string schedule;
-            public override string ToString()
-            {
-                return $"ManualAdd {{\n\tentry={entry}\n\tschedule={schedule}\n}}";
-            }
-        }
-        public struct SubjectFromGroup
-        {
-            public string shortname;
-            public string leader;
-            public string type;
-            public int year;
-            public int semester;
-            public string scheduleFrom;
-            public string scheduleTo;
-            public override string ToString()
-            {
-                return $"SubjectFromGroup {{\n\tshortname={shortname}\n\tleader={leader}\n\ttype={type}\n\tyear={year}\n\tsemester={semester}\n\t" +
-                    $"scheduleFrom={scheduleFrom}\n\tscheduleTo={scheduleTo}\n}}";
-            }
-        }
-        public struct ManualDelete
-        {
-            public DateTime start;
-            public string schedule;
-            public override string ToString()
-            {
-                return $"ManualDelete {{\n\tstart={start}\n\tschedule={schedule}\n}}";
-            }
-        }
-        public struct Group
+        public class Group
         {
             public string group;
             public int year;
@@ -57,6 +24,35 @@ namespace WAT_Planner
             public override string ToString()
             {
                 return $"Group {{\n\tgroup={group}\n\tyear={year}\n\tsemester={semester}\n\tcalendarName={calendarName}\n}}";
+            }
+        }
+        public class ManualAdd
+        {
+            public Entry entry;
+            public string schedule;
+            public override string ToString()
+            {
+                return $"ManualAdd {{\n\tentry={entry}\n\tschedule={schedule}\n}}";
+            }
+        }
+        public class SubjectFromGroup : Group
+        {
+            public string shortname;
+            public string leader;
+            public string type;
+            public override string ToString()
+            {
+                return $"SubjectFromGroup {{\n\tshortname={shortname}\n\tleader={leader}\n\ttype={type}\n\tyear={year}\n\tsemester={semester}\n\t" +
+                    $"group={group}\n\tscheduleTo={calendarName}\n}}";
+            }
+        }
+        public class ManualDelete
+        {
+            public DateTime start;
+            public string schedule;
+            public override string ToString()
+            {
+                return $"ManualDelete {{\n\tstart={start}\n\tschedule={schedule}\n}}";
             }
         }
 
@@ -307,8 +303,8 @@ namespace WAT_Planner
                     shortname = set["short_name"],
                     leader = set["leader"],
                     type = set["type"],
-                    scheduleFrom = set["scheduleFrom"],
-                    scheduleTo = set["scheduleTo"],
+                    group = set["scheduleFrom"],
+                    calendarName = set["scheduleTo"],
                 };
                 if(!Int32.TryParse(set["year"], out subject.year) || !Int32.TryParse(set["semester"], out subject.semester))
                 {

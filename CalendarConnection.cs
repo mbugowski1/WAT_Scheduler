@@ -107,7 +107,7 @@ namespace WAT_Planner
         }
         public void Update(Schedule schedule)
         {
-            List<Event> events = GetEvents(schedule.startDate);
+            List<Event> events = GetEvents(schedule.StartDate);
             events.Sort(delegate (Event a, Event b)
             {
                 if (a.Start.DateTime == b.Start.DateTime) return 0;
