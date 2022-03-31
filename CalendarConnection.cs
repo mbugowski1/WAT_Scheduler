@@ -79,10 +79,10 @@ namespace WAT_Planner
                 ApplicationName = "WAT Plan",
             });
         }
-        List<Event> GetEvents(DateTime startTime)
+        List<Event> GetEvents(DateTime startTime, DateTime endTime)
         {
             var request = service.Events.List(calendarId);
-            //request.TimeMax = startTime
+            request.TimeMax = endTime;
             request.TimeMin = startTime;
             string token = String.Empty;
             List<Event> result = new();
@@ -97,7 +97,7 @@ namespace WAT_Planner
         }
         public void ClearCalendar()
         {
-            List<Event> events = GetEvents(DateTime.MinValue);
+            List<Event> events = GetEvents(DateTime.MinValue, DateTime.MaxValue);
             events.ForEach(e =>
             {
                 Debug.WriteLine("Remove " + e.Summary + " at " + e.Start.DateTime);
@@ -107,7 +107,7 @@ namespace WAT_Planner
         }
         public void Update(Schedule schedule)
         {
-            List<Event> events = GetEvents(schedule.StartDate);
+            List<Event> events = GetEvents(schedule.StartDate, schedule.EndDate);
             events.Sort(delegate (Event a, Event b)
             {
                 if (a.Start.DateTime == b.Start.DateTime) return 0;
@@ -115,7 +115,6 @@ namespace WAT_Planner
                 else return -1;
             });
             List<Entry> sched = schedule.ToOneList();
-            DateTime startDate = sched[0].start;
             sched.ForEach(e =>
             {
                 Event online = events.Find(x => x.Start.DateTime == e.start);
@@ -144,7 +143,7 @@ namespace WAT_Planner
                 Thread.Sleep(500);
             });
         }
-        Event CreateEvent(Entry inject)
+        static Event CreateEvent(Entry inject)
         {
             Event entry = new Event();
             entry.Summary = inject.shortname + " (" + inject.type + ")";

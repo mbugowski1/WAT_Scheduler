@@ -13,14 +13,16 @@ namespace WAT_Planner
         public readonly int year;
         public readonly string calendarName;
         public DateTime StartDate { get; private set; }
+        public DateTime EndDate { get; private set; }
         public List<ScheduleDay> days = new List<ScheduleDay>();
-        public Schedule(string group, int year, int semester, string calendarName, DateTime startDate)
+        public Schedule(string group, int year, int semester, string calendarName, DateTime startDate, DateTime endDate)
         {
             this.group = group;
             this.semester = semester;
             this.year = year;
             this.calendarName = calendarName;
-            this.StartDate = startDate;
+            StartDate = startDate;
+            EndDate = endDate;
         }
         public ScheduleDay FindDay(DateTime date)
         {
@@ -42,7 +44,7 @@ namespace WAT_Planner
         }
         public Schedule ExportSubject(Config.SubjectFromGroup subject)
         {
-            var result = new Schedule(subject.group, year, semester, subject.calendarName, StartDate);
+            var result = new Schedule(subject.group, year, semester, subject.calendarName, StartDate, EndDate);
             foreach(var day in days)
             {
                 ScheduleDay newDay = null;

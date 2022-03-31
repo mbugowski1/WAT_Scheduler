@@ -171,7 +171,7 @@ namespace WAT_Planner
             weekCount = LoadWeeks(strona);
 
 
-            Schedule schedule = new Schedule(group, year, semester, name, startDate);
+            Schedule schedule = new Schedule(group, year, semester, name, startDate, startDate.AddDays(weekCount * 7));
 
             int searchLength = "tdFormList1DSheTeaGrpHTM3".Length;
             int tdIndex = strona.IndexOf("tdFormList1DSheTeaGrpHTM3");
@@ -281,7 +281,7 @@ namespace WAT_Planner
             var startDate = GetStartDate(text, year);
             weekCount = LoadWeeks(text);
 
-            Schedule schedule = new Schedule(group, year, semester, name, startDate);
+            Schedule schedule = new Schedule(group, year, semester, name, startDate, startDate.AddDays(weekCount * 7));
 
             int searchLength = "tdFormList1DSheTeaGrpHTM3".Length;
             int tdIndex = text.IndexOf("tdFormList1DSheTeaGrpHTM3");

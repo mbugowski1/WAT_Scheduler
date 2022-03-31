@@ -94,7 +94,7 @@ namespace WAT_Planner
                     continue;
                 else if (schedule == null)
                 {
-                    schedule = new Schedule(e.schedule, e.entry.start.Year, 0, e.schedule, DateTime.MinValue);
+                    schedule = new Schedule(e.schedule, e.entry.start.Year, 0, e.schedule, DateTime.MinValue, DateTime.MaxValue);
                     schedules.Add(schedule);
                 }
                 var day = schedule.days.Find(x => x.date.Date == e.entry.start.Date);
